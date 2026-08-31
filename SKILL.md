@@ -53,56 +53,49 @@ genuinely prior to mediation, every time, not just on sessions where drift seems
 
 ### Step 1 — OBSERVE
 
-Read the JSON from `compass.py read`. Also fetch git signals:
+Run the consolidated command — one script call instead of the seven separate
+`read`/`gitlog`/`carry-forward`/`read global`/`list-artefacts`/`watch-signals` calls
+this step used to make:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py gitlog <namespace>
+python3 ~/.claude/skills/compass/scripts/compass.py generate-orient-brief <namespace>
 ```
 
-Gather:
-- `intent` — the stated north star
-- `reality` — last known ground truth
-- `top_learnings` — highest-weight learnings (already ranked; used as fallback)
-- `planned_actions` from last session (if `last_close` is recent)
-- `session_index` — compact index of the last 20 sessions (P28: one line each — id, date, goals, top learning, tags). Scan this to identify sessions relevant to carry-forward, hypothesis validation, or prior decisions. Call `expand-session <id>` to fetch the full snapshot for those sessions only. Skip the rest.
-- git commits since last close (from gitlog)
+Returns `{context, gitlog, carry_forward, global_cross_project, artefacts_matched,
+watch_signals, brief_markdown}`. `context` is the same dict `read` returns (`intent`,
+`reality`, `top_learnings`, `planned_actions`, `session_index`, all cadence-due flags,
+etc.). `brief_markdown` is a pre-rendered markdown block covering the mechanical
+sections of Step 2's brief (reality completeness, zone-grouped top-learnings,
+cross-namespace signals, tactical backlog) — use it as the base and prepend the P48
+synthesis blockquote plus any judgement-driven sections (drift/gaps, advisories),
+which stay LLM-authored rather than templated.
 
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py expand-session <namespace> <session-id>
-```
+`global_cross_project` is already the ≤3 tag-overlap-matched entries from `global`
+(empty list if this namespace *is* `global`, or if there's no overlap — nothing further
+to fetch). `artefacts_matched` is already the ≤2 tag-matched artefacts. `watch_signals`
+is `null` when `config.watches` is empty, otherwise the same shape `watch-signals`
+returns — check `watch_signals.empty` before rendering that section.
 
-**BM25 goal-relevance query (R9):** if `session_index` contains planned actions for the most recent session, run:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
-  '{"query": "<last session planned actions joined>", "limit": 5}'
-```
-Use the returned `results` as `top_learnings` in the orient brief instead of the
-weight-ranked list. Fall back to `top_learnings` from `read` if the query returns
-fewer than 2 results (sparse corpus). Skip if no prior planned actions exist.
+Still fetch two things separately — both need per-session context this command can't
+supply:
 
-**Carry-forward check (P5):** also run:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py carry-forward <namespace>
-```
-Capture the `incomplete` array — these are unfinished actions from the previous session and are natural goal candidates for DECIDE.
-
-**Global orientation (P7):** if the current namespace is not `global`, also run:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py read global
-```
-From the global `top_learnings`, surface up to 3 entries whose tags overlap with this namespace's top-learning tags. Hold these for inclusion in the orient brief. Skip silently if `global` has no learnings or no tag overlap.
-
-**Artefact orientation (P41):** fetch recent artefacts whose tags overlap with the session context:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py list-artefacts <namespace> \
-  '{"tags": [<top 3 learning tags from top_learnings>], "limit": 5}'
-```
-From the returned list, keep at most 2 whose `tags` share ≥1 tag with the top-learnings. Hold for the orient brief. Skip silently if `artefacts` is empty.
-
-**Cross-namespace feed (P54):** if `config.watches` is non-empty, call:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py watch-signals <namespace>
-```
-If `response.empty` is false, hold the `signals` array for the orient brief. Skip entirely when `empty: true` — no output, no mention.
+- `session_index` (inside `context`) — compact index of the last 20 sessions (P28: one
+  line each — id, date, goals, top learning, tags). Scan this to identify sessions
+  relevant to carry-forward, hypothesis validation, or prior decisions, then call
+  `expand-session <id>` for those sessions only:
+  ```bash
+  python3 ~/.claude/skills/compass/scripts/compass.py expand-session <namespace> <session-id>
+  ```
+- **BM25 goal-relevance query (R9):** if `session_index` contains planned actions for
+  the most recent session, run:
+  ```bash
+  python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
+    '{"query": "<last session planned actions joined>", "limit": 5}'
+  ```
+  Use the returned `results` as `top_learnings` in the orient brief instead of the
+  weight-ranked list (re-render the top-learnings section of the brief with these
+  instead of `context.top_learnings` if it changes the ranking). Fall back to
+  `context.top_learnings` if the query returns fewer than 2 results (sparse corpus).
+  Skip if no prior planned actions exist.
 
 ### Step 2 — ORIENT
 
