@@ -10,6 +10,16 @@ half — Step 0 through Step 4.6 — from the pre-mediation impulse capture thro
 the goal-conditioned supplemental retrieval that runs right after session
 confirmation.
 
+**v1 consolidation (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
+in the `compass` skill):** the separate code-review-due / research-due / dream-pass-due
+prompts (formerly Steps 2b.3, 2b.4, 2b.6) and the separate ambition-nudge / goal-type-tagging
+/ verification-contract prompts (formerly Steps 3b.5, 3b.6, 3b.8) are now one batched screen
+— **Step 3f** — fired once, right after the DECIDE goal list is confirmed. The `*_due` flags
+themselves are still read at Step 1 OBSERVE; only the *prompt* moved. Step 4.5's Y/n gate
+is folded into Step 3f's item 7; only its free-text-per-hypothesis follow-up loop still runs
+where Step 4.5 used to be. v2 (per-item confidence-gated auto-apply using P59 override
+history) is scoped in the same plan doc but not built — see the Strategic backlog.
+
 **Inputs (from invocation context):**
 - `namespace` — the compass namespace opening
 
@@ -241,10 +251,14 @@ prompt (Y / S / D). The prompt and the orient brief must not be presented as one
 text — the user must have a clear opportunity to respond to the opportunities before the
 ORIENT checks continue. If no signals: proceed immediately and silently.
 
-**Cadence-gate convention (applies to 2b.1, 2b.3, 2b.3b, 2b.4, 2b.4b, 2b.6):** each of
-these checks a `*_due` flag from `read`. `false` → skip entirely, no prompt. `true` →
-surface once as part of ORIENT, never re-surface at close or mid-session. This is assumed
-below; only deviations from it are called out per step.
+**Cadence-gate convention (applies to 2b.1, 2b.3b, 2b.4b):** each of these checks a
+`*_due` flag from `read`. `false` → skip entirely, no prompt. `true` → surface once as
+part of ORIENT, never re-surface at close or mid-session. This is assumed below; only
+deviations from it are called out per step.
+
+**`code_review_due` / `research_due` / `dream_due`** follow the same false→skip rule, but
+their prompts no longer fire here — see the v1 consolidation note above. Nothing to do
+at this point in ORIENT; the flags are already sitting in `context` from Step 1.
 
 ### Step 2b.1 — Strategic Assumption Audit (P47)
 
@@ -253,85 +267,11 @@ Check `assumption_audit_due` from read output. If `false`, skip entirely. If `tr
 candidate selection, the P50/P59 advisory add-ons, the V/C/D/S response mapping, and the
 counter reset.
 
-### Step 2b.3 — Periodic code quality review
+### Step 2b.3 — Periodic code quality review (moved)
 
-Run this check **only if** the namespace has a `repo_path` configured. Check `code_review_due` from read output. If true, surface once as part of the orient brief.
-
-`code_review_due` fires from two independent gates — a session/day cadence (`sessions_since_review >= interval_sessions` AND days-since ≥ `interval_days`) **or** a complexity pull-forward (`code_review_status.pulled_forward_by_complexity`): a git-diff-derived signal (lines changed, new files/modules, a newly added `docs/` design doc, or clustered complex/chaotic decisions since the last review) crossing threshold, gated at a minimum of `review_complexity_min_sessions` (default 2) sessions so a single big commit moments after opening doesn't demand a review every session. This directly answers the P-review-cadence feedback that a pure session-count trigger under- or over-fires relative to how much actually changed.
-
-If `code_review_status.pulled_forward_by_complexity` is true, say so and cite the basis from `code_review_status.complexity_signal`:
-
-```
-🔬 Code review due — pulled forward by complexity (<sessions_since_review>/<interval_sessions> sessions in):
-   <lines_changed> lines changed, <new_files> new file(s)<if new_design_docs> incl. <new_design_docs> design doc(s)</if><if complex_decisions>, <complex_decisions> complex/chaotic decision(s)</if> since last review.
-Spawn a quality review agent? [Y/n/later]
-```
-
-Otherwise, use the plain cadence framing:
-
-```
-🔬 Code review due — <sessions_since_review> sessions since last review (<last_review_at or "never">).
-Spawn a quality review agent? [Y/n/later]
-```
-
-#### Y — Spawn the review agent
-
-Run immediately:
-
-```bash
-mkdir -p ~/.claude/loop/<namespace>/code_reviews
-```
-
-Spawn an Agent with the prompt template at `~/.claude/skills/compass/scripts/prompts/code-review-agent.md`, substituting `<repo_path>` from namespace state. The template specifies the exact output structure (Top Issues by severity/theme, then High-leverage harvestable skills/utilities) — the parsing in step 2 below depends on it, so pass it verbatim.
-
-After the agent returns its output:
-
-1. **Save the report:**
-   ```bash
-   # Write the full output to:
-   ~/.claude/loop/<namespace>/code_reviews/<YYYY-MM-DD>.md
-   ```
-
-2. **Parse for CRITICAL issues:** Scan the saved report for lines containing `[CRITICAL]`. Collect each as a short string (title only).
-
-3. **If CRITICAL issues exist:** Add them directly to the current session todo list using TodoWrite, prefixed with `[code review]`. Do NOT ask — just add them. Then inform the user:
-   ```
-   ⚠ <N> critical issue(s) added to your todo list for this session.
-   ```
-
-4. **Record the review:**
-   ```bash
-   python3 ~/.claude/skills/compass/scripts/compass.py record-review <namespace>
-   ```
-
-5. **Surface the report path and offer next-session goals:**
-   ```
-   ✓ Review saved to ~/.claude/loop/<namespace>/code_reviews/<date>.md
-
-   Top findings:
-   <list the [HIGH] and [CRITICAL] issues, max 5, one line each>
-
-   Extract top issues as next-session goals? [Y/n]
-   ```
-
-   - **Y** → add the top HIGH/CRITICAL issues (max 3, user can edit) to the namespace's `reality.md` under `## Backlog` → `### Tactical` (docs/namespace-backlog-standard.md) — a HIGH/CRITICAL finding is concrete and actionable, not something needing further scoping, so it belongs in Tactical, not Strategic. Tag each with `[source: code-review-<date>]`. Write via `update-reality`, never a direct edit. These surface both at the next ORIENT's Tactical backlog block and as `backlog_tactical` goal candidates at DECIDE.
-   - **n** → skip; the file is saved and can be referenced manually
-
-#### n or later — Defer
-
-Record the deferral:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py defer-code-review <namespace>
-```
-
-Check the returned `defer_count` and `escalate` fields.
-
-- **`escalate: false`** (first deferral): continue to DECIDE with no further comment.
-- **`escalate: true`** (2+ deferrals): add the review as a proposed goal in DECIDE:
-  ```
-  ⬆ Code review has been deferred <N> times — adding it to this session's goal proposals.
-  ```
-  It appears in the DECIDE goal list as: *"Run periodic code quality review (overdue)"*. The user can still remove it, but it is no longer silently skipped.
+`code_review_due` and its complexity-pull-forward signal are still read at Step 1
+OBSERVE — nothing fires here. The prompt, spawn-agent flow, and defer/escalate path
+now live in **Step 3f**, item 1 (v1 consolidation, 2026-09-01).
 
 ---
 
@@ -345,35 +285,11 @@ counter (`record-claude-review <namespace>`) and skip silently. Otherwise read
 
 ---
 
-### Step 2b.4 — Periodic external research (P11) — compass-research-scope
+### Step 2b.4 — Periodic external research (P11) — compass-research-scope (moved)
 
-Check `research_due` from read output. If true, present the prompt below **after** the orient brief, as a standalone interactive step — **do not embed it in the brief block**; present it separately and wait for the user's response before continuing.
-
-**P68 (MemoHarness carryforward) — complexity pull-forward:** if `research_status.pulled_forward_by_complexity` is true, use the pulled-forward framing instead of the plain cadence framing — mirrors the `code_review_due` complexity-pull-forward messaging exactly:
-
-```
-🔍 External research due — pulled forward by complexity (<sessions_since_research>/<research_interval_sessions> sessions in):
-   <N> complex/chaotic decision(s) clustering on tag "<tag>" since the last research pass.
-Scope Q&A before spawning a research agent? [Y / n / later]
-```
-
-Otherwise, use the plain cadence framing:
-
-```
-🔍 External research due — <sessions_since_research> sessions since last run.
-Scope Q&A before spawning a research agent? [Y / n / later]
-```
-
-Once the user responds, invoke the `compass-research-scope` sub-skill (Y) or record the deferral (n/later):
-
-```
-/compass-research-scope namespace=<namespace> sessions_since_research=<N>
-```
-
-The sub-skill handles the full Q&A, agent spawn, result parsing, `record-research` call, and defer path. It returns one of:
-- `{"result": "recorded", "signals_count": N}` — research completed; continue to next step.
-- `{"result": "deferred", "escalate": false}` — deferred; continue silently.
-- `{"result": "deferred", "escalate": true}` — add external research as a DECIDE goal proposal.
+`research_due` and its complexity-pull-forward signal are still read at Step 1 OBSERVE —
+nothing fires here. The prompt, `compass-research-scope` invocation, and defer/escalate
+path now live in **Step 3f**, item 2 (v1 consolidation, 2026-09-01).
 
 ---
 
@@ -425,14 +341,13 @@ If the file exists and is non-empty, surface it as a compact block:
 ```
 
 If the file does not exist or is empty, skip silently. This is a read-only display step —
-no confirmation needed. Continue immediately to Step 2b.6.
+no confirmation needed. Continue immediately to Step 2c.
 
-### Step 2b.6 — Inter-loop dream pass (P12.1)
+### Step 2b.6 — Inter-loop dream pass (P12.1) (moved)
 
-Check `dream_due` from read output. If `false`, skip entirely. If `true`, read
-`~/.claude/skills/compass/scripts/prompts/dream-pass-protocol.md` and follow it. It covers
-the dream-status/decision-guidance-candidates prompt, merge/decay candidate review, and
-the defer/escalate path.
+`dream_due` is still read at Step 1 OBSERVE — nothing fires here. The prompt and
+`dream-pass-protocol.md` invocation now live in **Step 3f**, item 3 (v1 consolidation,
+2026-09-01).
 
 ### Step 2c — Reality validation protocol (P0.1)
 
@@ -644,61 +559,89 @@ Sharpen with /goal? [Y / n / skip all]
 
 **Rule:** only fire once per DECIDE. If the user says skip, do not re-flag at close.
 
-### Step 3b.5 — Goal ambition nudge (P-GC3)
+### Step 3f — Consolidated DECIDE-tail batch (v1 consolidation, 2026-09-01)
 
-Run **after** vague goal detection, **before** architecture check. Advisory only — never blocks DECIDE.
+Run **after** Step 3b (vague goal detection), **before** Step 3c (architecture check).
+Replaces the formerly-separate prompts for code review due (old 2b.3), research due
+(old 2b.4), dream pass due (old 2b.6), goal ambition nudge (old 3b.5), goal type tagging
+(old 3b.6), and verification contract offer (old 3b.8) — plus folds in the Y/n gate half
+of hypothesis elicitation (old Step 4.5's first question; the free-text-per-hypothesis
+follow-up still runs separately after Step 4, since that needs new user-supplied content
+the assistant cannot infer — see `docs/2026-08-31-consolidate-open-close-prompts-plan.md`'s
+own batching rule).
 
-**Check 1 — All execution tasks:**
-Scan the confirmed goal list. If every goal is a concrete implementation task (build X, fix Y, extract Z, wire W) with no exploratory, design, or architectural goals, surface once:
+Build one numbered list, one line per item, **omitting any line whose trigger is false**
+(never renumber around a gap — a line's number is stable across a session):
 
+1. **`[CODE REVIEW]`** — only if `code_review_due` is true. Cite `sessions_since_review`/
+   `interval_sessions` (or the complexity-pull-forward basis from `code_review_status`,
+   same framing rule the old Step 2b.3 used) and `code_review_defer_count`. Default: **yes**.
+2. **`[RESEARCH]`** — only if `research_due` is true. Cite `sessions_since_research`/
+   `interval_sessions` (or the pull-forward basis) and `research_defer_count`. Default: **yes**.
+3. **`[DREAM PASS]`** — only if `dream_due` is true. Cite `sessions_since_dream`/
+   `interval_sessions`. Default: **yes**.
+4. **`[STRETCH GOAL]`** — only if either old-3b.5 trigger holds (all confirmed goals are
+   execution tasks with none exploratory/design, OR the last 3 `goal_completion_trend`
+   values are all `100.0`). Name which trigger fired. Default: **no**.
+5. **`[GOAL TYPES]`** — always present. Default: **all exploit** (`E` for every goal) —
+   this is the one default that changes behaviour from the old bare-skip (which recorded
+   no types at all): a rendered default line needs an actual value, not an absence, so
+   accepting it now means "everything type-tagged E," and exploration-ratio tracking
+   includes the session as 100% exploit rather than excluding it.
+6. **`[CONTRACTS]`** — always present. Default: **no** (skip; `goal_contracts` stays empty).
+7. **`[HYPOTHESES]`** — always present. Default: **no**.
+
+Render:
 ```
-💡 All goals this session are execution tasks.
-   Consider adding one stretch goal — a design question, architectural decision, or
-   hypothesis to test — to counter pure delivery momentum.
-   Add one? [Y / n / skip]
+1. [CODE REVIEW] due (<sessions_since_review>/<interval_sessions> sessions, deferred <N>×) → run? (default: yes)
+2. [RESEARCH] due (<sessions_since_research>/<interval_sessions> sessions, deferred <N>×) → scope Q&A? (default: yes)
+3. [DREAM PASS] due (<sessions_since_dream>/<interval_sessions> sessions) → run? (default: yes)
+4. [STRETCH GOAL] <trigger: all-execution-tasks | 3× 100% completion> → add one? (default: no)
+5. [GOAL TYPES] tag each goal E/X, e.g. "EEXEE" for 5 goals (default: all E)
+6. [CONTRACTS] pre-specify success criteria for any goal? (default: no)
+7. [HYPOTHESES] log assumptions to validate at close? (default: no)
+
+Accept all defaults, or override by number? [Enter to accept all]
 ```
 
-- **Y** → ask: *"One sentence: what's the open design question or hypothesis worth tackling?"* Add as an additional goal before locking.
-- **n / skip** → proceed silently. Do not re-prompt.
+If none of items 1–4 are triggered this session, the list only shows 5/6/7 — never fully
+empty (5/6/7 are always present, matching the old always-offered behaviour of 3b.6/3b.8
+and the always-optional-but-always-asked 4.5 gate).
 
-**Check 2 — Three consecutive 100% sessions:**
-From `goal_completion_trend` (already in the read output), check `trend`. If the last 3 values are all `100.0`:
+**Parsing overrides:** a bare **Enter** accepts every default. Otherwise parse
+space-separated tokens, each `<N><value>` (or `<N>:<value>` for a longer value):
+`1n` / `1later` / `4Y` / `5:EEXX` / `6S` / `7Y`, in any combination.
 
+**Route each item's answer exactly as its original step did:**
+
+| Item | On yes / non-default | On no / default-skip |
+|---|---|---|
+| 1 CODE REVIEW | Spawn the review agent: `mkdir -p ~/.claude/loop/<namespace>/code_reviews`, spawn an Agent with the prompt template at `~/.claude/skills/compass/scripts/prompts/code-review-agent.md` (substitute `<repo_path>`, pass verbatim). Then: save the report to `~/.claude/loop/<namespace>/code_reviews/<YYYY-MM-DD>.md`; scan it for `[CRITICAL]` lines and add each directly to the session todo list (prefixed `[code review]`, no asking); call `record-review <namespace>`; surface the report path plus up to 5 `[HIGH]`/`[CRITICAL]` findings and offer *"Extract top issues as next-session goals? [Y/n]"* — **Y** appends up to 3 (user-editable) to `reality.md`'s `## Backlog` → `### Tactical` via `append-reality-bullet`, tagged `[source: code-review-<date>]`. | `later` and `n` both defer: `defer-code-review <namespace>`. Check `defer_count`/`escalate`. `escalate: false` → no further comment. `escalate: true` → append *"Run periodic code quality review (overdue)"* to the already-confirmed goal list and say so (see escalation note below — DECIDE has already run by this point in the v1 flow). |
+| 2 RESEARCH | Invoke `/compass-research-scope namespace=<namespace>` — handles its own Q&A, agent spawn, `record-research`, and result parsing (the sub-skill has no gate of its own; this Y/non-default answer *is* the gate). | `later`/`n` → `defer-research <namespace>` (called directly here, never via the sub-skill). Check `defer_count`/`escalate`. `escalate: true` → append *"Run periodic external research pass (overdue)"* to the confirmed goal list, same escalation-after-lock note as item 1. |
+| 3 DREAM PASS | Read `~/.claude/skills/compass/scripts/prompts/dream-pass-protocol.md` and follow it. | Skip; counter untouched (the old Step 2b.6 had no defer command either — `dream_due` simply re-fires next ORIENT). |
+| 4 STRETCH GOAL | Ask: *"One sentence: what's the open design question or hypothesis worth tackling?"* Add as an additional confirmed goal. | Proceed silently. |
+| 5 GOAL TYPES | Parse the string into a `goal_types` array (e.g. `"EXE"` → `["exploit", "explore", "exploit"]`). Store alongside goals; passed in the close payload as `"goal_types": [...]`. | Default-fill `goal_types` as all `"exploit"` for the confirmed goal count (see the item-5 note above). |
+| 6 CONTRACTS | Read `~/.claude/skills/compass/scripts/prompts/contract-and-architecture-checks.md`'s "Verification contract offer" section and follow its Y/S per-goal criteria capture (`log-goal-contract` per goal). | `goal_contracts` stays empty for this session. |
+| 7 HYPOTHESES | Proceed into Step 4.5's existing per-assumption free-text loop (unchanged — this is the part that needs new user-supplied content, so it stays interactive after Step 4's lock). | Skip Step 4.5 entirely; no hypotheses logged. |
+
+**Escalation-after-lock note (items 1/2 only):** Step 3 (DECIDE) has already run and the
+goal list is already confirmed by the time Step 3f fires — a deliberate ordering change
+from the pre-v1 flow, where code-review/research escalation used to happen *before* goals
+were locked, as part of the original numbered DECIDE proposal. An `escalate: true` response
+here means: append the item to the already-confirmed list and say so plainly, e.g.:
 ```
-📈 Three sessions in a row at 100% completion.
-   Perfect scores can mean great execution — or goals set safely within comfort zone.
-   Worth adding a harder goal this session? [Y / n / skip]
+⬆ Code review escalated (deferred <N>×) — adding to this session's already-confirmed goals.
 ```
-
-- **Y** → same prompt as Check 1 — ask for a stretch goal and add it.
-- **n / skip** → proceed silently.
+Do not re-open the whole goal list for edits at this point — just append and continue.
 
 **Rules:**
-- Only fire each check once per DECIDE. Skip silently if fewer than 3 prior sessions in trend.
-- If both checks trigger, batch into one prompt — do not ask twice.
-- Advisory only: user can always skip without consequence.
-
-### Step 3b.6 — Goal type tagging (P23)
-
-After the ambition nudge, ask once before locking:
-
-```
-🔀 Tag each goal — exploit (E) or explore (X)?
-   E = implementation / delivery
-   X = research, hypothesis, architectural decision
-   (e.g. "EEXEE" for 5 goals — or skip)
-```
-
-- **skip / enter** → proceed without types; exploration ratio will not include this session.
-- **response** → parse into `goal_types` array (e.g. `"EXE"` → `["exploit", "explore", "exploit"]`). Store alongside goals; passed in close payload as `"goal_types": [...]`.
-
-**Rule:** one prompt only. No blocking — types are optional metadata, not a gate.
-
-### Step 3b.8 — Verification contract offer (P55)
-
-Read `~/.claude/skills/compass/scripts/prompts/contract-and-architecture-checks.md` and
-follow its Step 3b.8 section — it covers the Y/S/n prompt and per-goal criteria capture.
-Always offered once per DECIDE regardless of `repo_path`.
+- One rendered screen. One round of overrides. No follow-up screen for items 1–3, 6 —
+  their Y-path work (agent spawn, sub-skill invocation, contract capture) happens
+  immediately after parsing the response, same as it did inline in their original steps.
+- Item 4's stretch-goal free text and item 7's hypothesis free text are still separate
+  interactive follow-ups **after** this screen resolves — batching a yes/no gate does not
+  mean inventing content the user hasn't supplied yet.
+- Advisory items (4) never block; cadence items (1–3) never block; 5/6/7 never block.
 
 ### Step 3c — Architecture constraint check (P_ARCH)
 
@@ -784,15 +727,10 @@ required:
 
 ### Step 4.5 — Pre-session hypothesis elicitation (P15)
 
-Before confirming "Let's go", offer once:
+The Y/n gate ("Log any to validate at close?") is now item 7 of Step 3f — this step
+only runs the free-text follow-up loop, and only if item 7's answer was **Y**:
 
-```
-🧪 Pre-session assumptions — what are these goals betting on?
-   Log any to validate at close? [Y / n]
-```
-
-- **n / skip / enter** → skip silently. Continue to confirm.
-- **Y** → for each assumption the user provides, log as a hypothesis. If the assumption clearly bets on one or more of this session's confirmed goals, include `goal_origin` (the goal's index/indices) in the same call — `log-learning` already accepts and stores it on create, so this does not require a second write:
+- **Y** (from Step 3f item 7) → for each assumption the user provides, log as a hypothesis. If the assumption clearly bets on one or more of this session's confirmed goals, include `goal_origin` (the goal's index/indices) in the same call — `log-learning` already accepts and stores it on create, so this does not require a second write:
   ```bash
   python3 ~/.claude/skills/compass/scripts/compass.py log-learning <namespace> '{
     "text": "<assumption text>",
@@ -806,7 +744,10 @@ Before confirming "Let's go", offer once:
   Accept one assumption per prompt; ask "Another? [Y / n]" until done or n.
   These surface in the next close's `pending_validations`.
 
-**Rule:** one prompt only — never ask mid-session. No script changes needed (log-learning already supports `goal_origin` on both create and weight-increment paths — see `_upsert_learning`).
+**Rule:** the Y/n gate (Step 3f item 7) fires once, never re-asked mid-session; the
+free-text loop above only runs at all when that gate came back Y. No script changes
+needed (log-learning already supports `goal_origin` on both create and weight-increment
+paths — see `_upsert_learning`).
 
 Confirm to the user:
 ```
@@ -843,3 +784,13 @@ No confirmation needed. No action required. This is a read-only orientation supp
 Once Step 4.5/4.6 confirms and the todo list is set, this sub-skill is done — the
 conversation simply continues into the session's work. There is nothing to hand
 back to the parent router.
+
+**Prompt-count tally (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
+in the `compass` skill):** keep a running count of every distinct interactive screen
+actually presented to the user across Steps 0–4.6 — an "interactive screen" is one round
+trip that waited for a response, not one script call or one bullet within a screen (Step
+3f's batch counts as **one**, however many of its 7 items rendered). Carry this number
+forward in working memory as `open_prompt_count` for the rest of the session — it gets
+passed into the final `close` payload at `compass-close`'s Step 6, alongside its own
+`close_prompt_count` tally, purely as write-only session metrics (no script or trend
+reads it yet — see the Strategic backlog for the deferred read-side `avg_last_5`).
