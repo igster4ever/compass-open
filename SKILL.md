@@ -70,6 +70,19 @@ this step used to make:
 python3 ~/.claude/skills/compass/scripts/compass.py generate-orient-brief <namespace>
 ```
 
+**This output is often large enough that the harness persists it to a file instead of
+inlining it (2026-09-02 session-review finding — a real session `Read` the entire
+43KB persisted file into context here, most of it the raw `context`/`recent_history`/
+`cycle_history` JSON already re-expressed by `brief_markdown` below). When that
+happens, do NOT `Read` the whole file.** Extract only what a given step actually needs
+with a targeted one-liner, e.g.:
+```bash
+python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
+```
+and pull individual `context.*` fields (the cadence-due flags Step 2b onward check,
+`session_index` for `expand-session` lookups, etc.) the same way, one field at a time,
+rather than loading the full structure into context at once.
+
 Returns `{context, gitlog, carry_forward, global_cross_project, artefacts_matched,
 watch_signals, brief_markdown}`. `context` is the same dict `read` returns (`intent`,
 `reality`, `top_learnings`, `planned_actions`, `session_index`, all cadence-due flags,
