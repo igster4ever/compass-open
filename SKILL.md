@@ -727,7 +727,19 @@ call already carried `raw_impulse` and this one must not repeat it — `open`'s 
 re-open branch ignores a fourth positional value regardless, so passing it again here is
 harmless but redundant, not double-counted.
 
-Then populate the todo list with the confirmed goals (use TodoWrite).
+Then populate the todo list with the confirmed goals, if this runtime has a
+TodoWrite-equivalent tool (use it). **Either way**, as each confirmed goal actually
+completes during the session, also call:
+```bash
+python3 ~/.claude/skills/compass/scripts/compass.py set-goal-status <namespace> '{"index": <0-based goal index>, "done": true}'
+```
+This is what the Drift nudge check (and any future mid-session goal-progress check)
+reads when no host todo tool is available — `open` already initialises
+`goal_progress` to all-`false` for the confirmed goal count, so there's nothing to
+set up here beyond calling this as goals land. Skip only if you've confirmed this
+runtime's TodoWrite-equivalent tool exists AND is the thing Drift nudge is already
+configured to read instead (2026-09-02 — a real session found `ToolSearch` returning
+nothing for TodoWrite, exactly the gap this closes).
 
 **P67 cold-start seeding:** if the response's `seeded_count` is greater than 0 (only
 possible on this namespace's genuinely first-ever open), surface once, no action
