@@ -227,7 +227,7 @@ Flag all as goal candidates, same as carry-forward.
 If **fewer than 2** surfaced learnings carry a zone, render the original flat weight-sorted list (today's format) — grouping a mostly-unclassified corpus into near-empty buckets is worse than the flat list it replaces.
 
 **Conditional advisories:** check these fields from the current `read` output —
-`session_complexity.elevated` · `goal_stats.hit_rate < 70` ·
+`session_complexity.elevated` · `goal_stats.total_goals > 0 AND goal_stats.hit_rate < 70` ·
 `reality_completeness.regression` · `exploration_ratio.low` ·
 `reality_structure_warnings` non-empty · `outcome_rate < 0.3` ·
 `contract_coverage < 0.4` · `quality_trend == "declining"` ·
