@@ -372,32 +372,19 @@ step** — do not proceed to DECIDE until it resolves.
 
 ### Step 2d — Hypothesis validation (P1.1)
 
-Check `pending_validations` from the `read` output. If empty, skip to Step 2e. If
+Check `pending_validations` from the `read` output. If empty, skip to Step 2f. If
 non-empty, read the same `reality-and-hypothesis-validation.md` file's Step 2d section —
 it covers the Confirmed/Disproven/Untested prompt per expired hypothesis.
 
-### Step 2e — Deferred skill escalation (P1.3)
-
-Check `escalation_candidates` from read output. If any opportunities have defer_count >= 2:
-
-```
-⬆ Deferred skill escalation — <N> opportunity(ies) escalated from prior deferrals.
-
-- "<opportunity text>" (deferred 2 times)
-  Commit to goal this session? Y/N
-
-- "<opportunity text>" (deferred 2 times)
-  Y/N?
-...
-```
-
-For each escalation candidate, ask: **Y**es (commit to goal) or **N**o (acknowledge but skip this session).
-
-Map responses:
-- **Y** (Commit) → add to this session's goals in DECIDE step; the opportunity is treated as a priority gap
-- **N** (Skip) → note it; if not completed by CLOSE, another deferral will be recorded at CLOSE time
-
-If no escalation candidates exist, skip silently and continue to DECIDE.
+*(Former Step 2e — "Deferred skill escalation" (P1.3) — removed 2026-09-09: the only
+`defer-opportunity` call site (`compass-close/SKILL.md`, old "Deferred escalations"
+paragraph) only re-deferred opportunities already in `escalation_candidates`, and
+nothing ever wrote the first entry — `skill-opportunity-detection.md`'s own "D (defer)"
+path writes straight to `reality.md`'s Strategic backlog instead, bypassing this
+mechanism entirely. `escalation_candidates` could never be non-empty, so this step was
+dead code. `deferred_opportunities`/`cmd_defer_opportunity`/`cmd_resolve_opportunity`/
+`escalation_candidates` removed from compass's script; Strategic backlog bullets already
+provide the same persistent cross-session surfacing this was meant for.)*
 
 ### Step 2f — Session hygiene precondition check (P4.2)
 
