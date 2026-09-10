@@ -460,6 +460,12 @@ Per-item responses:
   (2026-08-28 audit finding #4), unless several other bullets are also being reworded
   in the same close, in which case a single `update-reality` covering all of them is
   the better trade.
+
+  *(Unlike most compass write commands, `append-reality-bullet`/`remove-reality-bullet`
+  do NOT take a JSON blob — they take two plain positional strings:
+  `append-reality-bullet <namespace> "<exact section heading, e.g. "### Tactical">" "<bullet text>"`.
+  The section heading must match the rendered Markdown heading exactly; an unknown one
+  returns `available_headers` in the error rather than guessing.)*
 - **N** → skip this update; the bullet stays as-is.
 - **M** → ask for the user's preferred wording; note it for CLOSE.
 
@@ -616,7 +622,7 @@ space-separated tokens, each `<N><value>` (or `<N>:<value>` for a longer value):
 
 | Item | On yes / non-default | On no / default-skip |
 |---|---|---|
-| 1 CODE REVIEW | Spawn the review agent: `mkdir -p ~/.claude/loop/<namespace>/code_reviews`, spawn an Agent with the prompt template at `~/.claude/skills/compass/scripts/prompts/code-review-agent.md` (substitute `<target_path_or_diff>` with `<repo_path>`, pass verbatim). Then: save the report to `~/.claude/loop/<namespace>/code_reviews/<YYYY-MM-DD>.md`; scan it for `[CRITICAL]` lines and add each directly to the session todo list (prefixed `[code review]`, no asking); call `record-review <namespace>`; surface the report path plus up to 5 `[HIGH]`/`[CRITICAL]` findings and offer *"Extract top issues as next-session goals? [Y/n]"* — **Y** appends up to 3 (user-editable) to `reality.md`'s `## Backlog` → `### Tactical` via `append-reality-bullet`, tagged `[source: code-review-<date>]`. | `later` and `n` both defer: `defer-code-review <namespace>`. Check `defer_count`/`escalate`. `escalate: false` → no further comment. `escalate: true` → append *"Run periodic code quality review (overdue)"* to the already-confirmed goal list and say so (see escalation note below — DECIDE has already run by this point in the v1 flow). |
+| 1 CODE REVIEW | Spawn the review agent: `mkdir -p ~/.claude/loop/<namespace>/code_reviews`, spawn an Agent with the prompt template at `~/.claude/skills/compass/scripts/prompts/code-review-agent.md` (substitute `<target_path_or_diff>` with `<repo_path>`, pass verbatim). Then: save the report to `~/.claude/loop/<namespace>/code_reviews/<YYYY-MM-DD>.md`; scan it for `[CRITICAL]` lines and add each directly to the session todo list (prefixed `[code review]`, no asking); call `record-review <namespace>`; surface the report path plus up to 5 `[HIGH]`/`[CRITICAL]` findings and offer *"Extract top issues as next-session goals? [Y/n]"* — **Y** appends up to 3 (user-editable) to `reality.md`'s `## Backlog` → `### Tactical` via `append-reality-bullet <namespace> "### Tactical" "<text>"` (two plain strings, not JSON), tagged `[source: code-review-<date>]`. | `later` and `n` both defer: `defer-code-review <namespace>`. Check `defer_count`/`escalate`. `escalate: false` → no further comment. `escalate: true` → append *"Run periodic code quality review (overdue)"* to the already-confirmed goal list and say so (see escalation note below — DECIDE has already run by this point in the v1 flow). |
 | 2 RESEARCH | Invoke `/compass-research-scope namespace=<namespace>` — handles its own Q&A, agent spawn, `record-research`, and result parsing (the sub-skill has no gate of its own; this Y/non-default answer *is* the gate). | `later`/`n` → `defer-research <namespace>` (called directly here, never via the sub-skill). Check `defer_count`/`escalate`. `escalate: true` → append *"Run periodic external research pass (overdue)"* to the confirmed goal list, same escalation-after-lock note as item 1. |
 | 3 DREAM PASS | Read `~/.claude/skills/compass/scripts/prompts/dream-pass-protocol.md` and follow it. | Skip; counter untouched (the old Step 2b.6 had no defer command either — `dream_due` simply re-fires next ORIENT). |
 | 4 STRETCH GOAL | Ask: *"One sentence: what's the open design question or hypothesis worth tackling?"* Add as an additional confirmed goal. | Proceed silently. |
