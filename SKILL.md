@@ -422,60 +422,15 @@ without re-incrementing any counters. No special handling required.
 
 If no violation (last_close is more than cooldown_hours ago, or never closed), skip silently.
 
-### Step 2g — Git vs reality reconciliation
+### Step 2g — Git vs reality reconciliation (moved)
 
-Run **only if** `gitlog` returned commits this session. Silently scan two things:
-
-**A — Stale "missing" bullets:** read reality's `## Backlog` section (or, for a namespace
-not yet migrated to the standard — docs/namespace-backlog-standard.md — whichever of
-`## What's missing` / `## What's next` it still uses). For each bullet, check whether
-any commit subject or changed filename from the gitlog plausibly addresses it. Match
-loosely — component names, feature names, file paths.
-
-**B — New files not in reality:** identify files created in commits (new file additions)
-that do not appear anywhere in reality's "What exists" section.
-
-If **no matches** from either scan: skip silently — no prompt, no output.
-
-If **matches found**, surface once before DECIDE. Present each match with the specific
-proposed change, not a vague signal:
-
-```
-⚠ Git vs reality — <N> proposed update(s):
-
-  • PROPOSED: move "reality bullet about X" → "What exists and works"
-    Source: commit a3f2c1 "<commit subject>" (<N>d ago)
-    Accept? [Y / N / M(anual edit)]
-
-  • PROPOSED: add "path/to/file.py — <inferred description>" to "What exists"
-    Source: new file in commit b7d2e3
-    Accept? [Y / N / M(anual edit)]
-```
-
-Per-item responses:
-- **Y** → mark as accepted; hold the exact proposed wording for CLOSE. Each accepted
-  item here is a single bullet — a "move" is one `remove-reality-bullet` (Backlog) plus
-  one `append-reality-bullet` (What exists and works); a "new file" add is one
-  `append-reality-bullet`. Prefer these over reconstructing the whole document at close
-  (2026-08-28 audit finding #4), unless several other bullets are also being reworded
-  in the same close, in which case a single `update-reality` covering all of them is
-  the better trade.
-
-  *(Unlike most compass write commands, `append-reality-bullet`/`remove-reality-bullet`
-  do NOT take a JSON blob — they take two plain positional strings:
-  `append-reality-bullet <namespace> "<exact section heading, e.g. "### Tactical">" "<bullet text>"`.
-  The section heading must match the rendered Markdown heading exactly; an unknown one
-  returns `available_headers` in the error rather than guessing.)*
-- **N** → skip this update; the bullet stays as-is.
-- **M** → ask for the user's preferred wording; note it for CLOSE.
-
-**Rule:** this is a signal, not a gate. If the user rejects all, do not block goal-setting.
-The wiki-frontend failure mode (two sessions building already-shipped features) is the
-specific thing this prevents.
-
-**Match confidence filter:** only propose an update when the match is specific — a commit
-subject or changed filename containing the exact component or feature name from the reality
-bullet. Do not propose updates based on loose keyword proximity alone.
+The scan itself (stale "missing" bullets vs `gitlog`; new files not in reality) and its
+prompt now run as item 1 of **Step 3b**'s consolidated pre-lock advisory batch (v2
+consolidation, 2026-09-16) — grouped with vague-goal/research-fork/domain-novelty since
+none of the four has a hard sequential dependency on another. `gitlog` is already fetched
+at Step 1 OBSERVE, so nothing needs fetching differently here; only the prompt's timing
+moved, from before DECIDE to right after it. See Step 3b for the full scan/prompt/routing
+logic — nothing fires at this point in ORIENT anymore.
 
 ### Step 2h — Intent drift check (P1.2)
 
@@ -536,38 +491,82 @@ Ask: *"Does this match your intent for today? Add, remove, or reorder before I l
 Wait for confirmation. Accept additions, removals, rephrasing. If the user just says
 "yes" or "go", treat the proposal as confirmed.
 
-### Step 3b — Vague goal detection (P_GOAL)
+### Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)
 
-After the user confirms (or edits) the goal list, scan each goal for vagueness signals
-**before** locking:
+Run **after** Step 3 (DECIDE goal list confirmed), **before** Step 3f. Replaces the
+formerly-separate prompts for git-vs-reality reconciliation (old Step 2g — moved here
+from ORIENT-time, since its scan only needs `gitlog` + `reality`, both already available,
+and it is advisory/non-blocking like the other three), vague-goal detection (old Step 3b),
+pre-implementation research-fork detection (old Step 3d), and domain-novelty check (old
+Step 3e). Same rationale as Step 3f's own v1 consolidation: none of these four checks has
+a hard sequential dependency on another, so one batch costs one round trip instead of four
+(Strategic backlog `[HIGH PRIORITY]` item, 2026-09-14 session audit — ~13 round trips
+measured across a routine 4-goal open+close even after v1).
 
-**Vague if any of:**
-- Contains: "work on", "look at", "investigate", "sort out", "pick up", "think about",
-  "explore", "continue with", "review", "have a look"
-- Fewer than 5 words with no concrete output verb (e.g. "auth service", "the Redis thing")
-- No observable deliverable implied (cannot be marked done without subjective judgment)
+**Trade-off note (2g's reposition):** moving Step 2g from before-DECIDE to after-DECIDE
+means a git-reconciliation hit is now caught *after* the user has already proposed/confirmed
+a goal that might turn out to be already resolved, not before. Judged acceptable — 2g was
+already documented as "a signal, not a gate," so catching it here, still before Step 4 lock,
+still fully corrects the goal list at zero extra round-trip cost; the only thing lost is
+not shaping the *initial* numbered proposal in Step 3 around it. Confidence: 8/10 for this
+namespace's cadence (low daily session count, advisory-only checks); revisit if a future
+namespace's DECIDE regularly locks in goals that item 1 below then has to walk back.
 
-If **one or more goals** are vague, surface once — do not flag each individually:
+Build one numbered list, one line per item, **omitting any line whose trigger is false**
+(never renumber around a gap):
 
+1. **`[GIT/REALITY]`** — only if old Step 2g's scan (stale "missing"/Backlog bullets vs
+   `gitlog`; new files not in reality's "What exists") finds at least one match.
+2. **`[VAGUE GOALS]`** — only if one or more confirmed goals match old Step 3b's vagueness
+   signals (*"work on", "look at", "investigate", "sort out", "pick up", "think about",
+   "explore", "continue with", "review", "have a look"*; fewer than 5 words with no
+   concrete output verb; no observable deliverable implied).
+3. **`[RESEARCH FORK]`** — only if a confirmed goal contains a decision verb (*implement,
+   migrate, replace, integrate, adopt, switch, introduce, rewrite, refactor, extract,
+   redesign*).
+4. **`[DOMAIN NOVELTY]`** — only if, per old Step 3e's token-query check, a confirmed goal
+   touches a domain with no results or only >90-day-old results, and at least 3 prior
+   sessions exist.
+
+Render:
 ```
-💭 Goal(s) <N, M> look broad — a sharp definition of done will help compass track
-   them accurately.
+1. [GIT/REALITY] <N> proposed reality update(s) found (top: "<preview>") → review? (default: yes)
+2. [VAGUE GOALS] Goal(s) <N, M> look broad → sharpen with /goal? (default: no)
+3. [RESEARCH FORK] Goal <N> ("<condensed text>") touches a decision-verb area → check prior decisions? (default: yes)
+4. [DOMAIN NOVELTY] Goal <N> touches an unexplored domain → consider an exploratory addition? (default: no)
 
-Sharpen with /goal? [Y / n / skip all]
+Accept all defaults, or override by number? [Enter to accept all]
 ```
 
-- **Y** → for each flagged goal, invoke the `goal` skill in `--session` mode with the
-  vague goal text pre-loaded as context. Replace the flagged goal(s) in the list with
-  the returned `SESSION_GOALS` criteria. Re-present the updated goal list for a final
-  confirm before locking.
-- **n / skip** → lock the goals as-is; note in the open payload that these goals have
-  no measurable criteria (they will surface as low-confidence at close if incomplete).
+If **none** of 1–4 trigger: skip this entire step silently — unlike Step 3f, nothing here
+is always-present, so an all-false batch renders no screen at all.
 
-**Rule:** only fire once per DECIDE. If the user says skip, do not re-flag at close.
+**Parsing overrides:** same convention as Step 3f — a bare **Enter** accepts every default;
+otherwise parse space-separated `<N><value>` tokens (`1n`, `2Y`, `3n`, `4Y`, in any
+combination).
+
+**Route each item's answer exactly as its original step did:**
+
+| Item | On yes / non-default | On no / default-skip |
+|---|---|---|
+| 1 GIT/REALITY | Present the full per-match detail exactly as old Step 2g specified (`⚠ Git vs reality — <N> proposed update(s)` block, Y/N/M per match) and process responses the same way — `remove-reality-bullet`/`append-reality-bullet` per accepted item (see old Step 2g's note on their two-plain-string calling convention, not JSON). | Skip; bullets stay as-is. |
+| 2 VAGUE GOALS | Invoke the `goal` skill in `--session` mode per flagged goal, exactly as old Step 3b's Y-path. Re-present the updated goal list for a final confirm before Step 3f. | Lock as-is; note in the open payload that these goals have no measurable criteria (surface as low-confidence at close if incomplete). |
+| 3 RESEARCH FORK | Read `~/.claude/skills/compass/scripts/prompts/research-fork-detection.md` and follow it in full — it renders its own hits/no-hits sub-prompt and the no-go/deferred override; this item's "yes" is the gate into that file, not a duplicate of its content. | Skip; no research-fork check this session. |
+| 4 DOMAIN NOVELTY | Follow old Step 3e's Y-path: ask *"One sentence: what would you want to learn or confirm about this area?"*, add as a goal candidate or log as a hypothesis. | Dismiss; do not re-flag. |
+
+**Rules:**
+- One rendered screen for whichever of 1–4 triggered. Items whose "yes" path has its own
+  sub-prompts (1's per-match Y/N/M, 2's re-confirm, 3's file, 4's one-sentence ask) still
+  run those immediately after parsing the response — consolidation removes each item's
+  separate *initial* gate, not the necessary follow-up content an accepted item needs.
+- Batch is entirely skippable — if all four triggers are false, render nothing, not even
+  an empty list (unlike Step 3f, which always shows items 5–7).
+- Only fire once per DECIDE — never re-run mid-session or at close.
 
 ### Step 3f — Consolidated DECIDE-tail batch (v1 consolidation, 2026-09-01)
 
-Run **after** Step 3b (vague goal detection), **before** Step 3c (architecture check).
+Run **after** Step 3b (the consolidated pre-lock advisory batch), **before** Step 3c
+(architecture check).
 Replaces the formerly-separate prompts for code review due (old 2b.3), research due
 (old 2b.4), dream pass due (old 2b.6), goal ambition nudge (old 3b.5), goal type tagging
 (old 3b.6), and verification contract offer (old 3b.8) — plus folds in the Y/n gate half
@@ -656,54 +655,19 @@ silently — do not even read the prompts file. If configured, read the same
 `contract-and-architecture-checks.md` file's Step 3c section — it covers the
 service/module-name detection and the pom.xml dependency-declaration check.
 
-### Step 3d — Pre-implementation research fork detection (P13)
+### Step 3d — Pre-implementation research fork detection (P13) (moved)
 
-Run **after** architecture check, **before** Step 4 lock. Advisory only — never blocks DECIDE.
+Trigger check and full logic now live as item 3 of **Step 3b**'s consolidated pre-lock
+advisory batch (v2 consolidation, 2026-09-16) — nothing fires at this point anymore.
+`research-fork-detection.md` is unchanged; only its invocation site moved.
 
-**Trigger:** scan each confirmed goal for decision verbs:
-*implement, migrate, replace, integrate, adopt, switch, introduce, rewrite, refactor, extract, redesign*
+### Step 3e — Domain novelty check (P21) (moved)
 
-If **no goal** contains a decision verb: skip silently — no output. If at least one goal
-does, read `~/.claude/skills/compass/scripts/prompts/research-fork-detection.md` and follow
-it — it covers the query/scan, the hits-found and no-hits prompts, and the no-go/deferred
-override sub-flow.
-
----
-
-### Step 3e — Domain novelty check (P21)
-
-Run **after** Step 3d, **before** Step 4 lock. Advisory only — never blocks DECIDE.
-
-**Trigger:** for each confirmed goal, extract domain/component tokens — technology names, service names, architectural terms. Exclude decision verbs already handled by Step 3d.
-
-*Example extraction: "Implement LCLM session index in cmd_read" → tokens: `LCLM`, `session index`, `cmd_read`*
-
-For each token set, query learnings:
-```bash
-python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
-  '{"query": "<extracted tokens>", "limit": 3}'
-```
-
-**Classify results:**
-- If query returns **no results**, or all results have `date` older than 90 days: the domain is unexplored or stale — flag it.
-- If recent results exist (< 90 days): domain is familiar — skip silently.
-
-**If any goals touch unexplored domains**, surface **once** as a single non-blocking block:
-
-```
-🔍 Domain novelty — limited recent learnings for:
-  · "<goal text, condensed>" (token: <domain token>, last learning: <date or "none">)
-
-  Worth adding an exploratory goal — hypothesis, spike, or research question? [Y / n / skip]
-```
-
-- **Y** → prompt: *"One sentence: what would you want to learn or confirm about this area?"* Add as a goal candidate in the DECIDE list or log as a hypothesis if the user prefers not to make it a full goal.
-- **n / skip** → dismiss silently; do not re-flag.
-
-**Rules:**
-- One prompt maximum per DECIDE — batch all unexplored-domain hits.
-- Do not fire if fewer than 3 prior sessions exist (insufficient history to distinguish "new" from "early").
-- **Relationship to P13:** P13 checks for *prior decisions* on a chosen approach. P21 checks for *absence of prior experience* in a domain — complementary, not redundant.
+Trigger check and full logic now live as item 4 of **Step 3b**'s consolidated pre-lock
+advisory batch (v2 consolidation, 2026-09-16) — nothing fires at this point anymore.
+**Relationship to P13** (unchanged): P13/item-3 checks for *prior decisions* on a chosen
+approach; P21/item-4 checks for *absence of prior experience* in a domain — complementary,
+not redundant, which is why both can appear as separate lines in the same batch screen.
 
 ---
 
