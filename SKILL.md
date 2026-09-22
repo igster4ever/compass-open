@@ -67,7 +67,7 @@ Run the consolidated command — one script call instead of the seven separate
 `read`/`gitlog`/`carry-forward`/`read global`/`list-artefacts`/`watch-signals` calls
 this step used to make:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py generate-orient-brief <namespace>
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py generate-orient-brief <namespace>
 ```
 
 **This output is often large enough that the harness persists it to a file instead of
@@ -77,7 +77,7 @@ inlining it (2026-09-02 session-review finding — a real session `Read` the ent
 happens, do NOT `Read` the whole file.** Extract only what a given step actually needs
 with a targeted one-liner, e.g.:
 ```bash
-python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
+/opt/homebrew/bin/python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
 ```
 and pull individual `context.*` fields (the cadence-due flags Step 2b onward check,
 `session_index` for `expand-session` lookups, etc.) the same way, one field at a time,
@@ -106,12 +106,12 @@ supply:
   relevant to carry-forward, hypothesis validation, or prior decisions, then call
   `expand-session <id>` for those sessions only:
   ```bash
-  python3 ~/.claude/skills/compass/scripts/compass.py expand-session <namespace> <session-id>
+  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py expand-session <namespace> <session-id>
   ```
 - **BM25 goal-relevance query (R9):** if `session_index` contains planned actions for
   the most recent session, run:
   ```bash
-  python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
+  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
     '{"query": "<last session planned actions joined>", "limit": 5}'
   ```
   Use the returned `results` as `top_learnings` in the orient brief instead of the
@@ -241,7 +241,7 @@ don't load that file for a brief with nothing to add.
 **Record surfacing (P32/P44):** immediately after presenting the brief above (and the
 global cross-project block, if shown), run silently:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py surface-learnings <namespace>
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py surface-learnings <namespace>
 ```
 If the global cross-project block was shown, also run `surface-learnings global`. This
 is what bumps `times_surfaced`/`last_surfaced_at` for the learnings actually shown to the
@@ -392,7 +392,7 @@ Before proceeding to DECIDE, check if this namespace was last closed less than 4
 (or less than the configured cooldown, if customised):
 
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py read <namespace>
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py read <namespace>
 ```
 
 Check `last_close` timestamp. Calculate hours elapsed. If elapsed time is less than the
@@ -410,7 +410,7 @@ Why are you resuming so soon? (brief reason)
 Once they provide a reason, acknowledge the violation:
 
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py acknowledge-cooldown-violation <namespace> '{
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py acknowledge-cooldown-violation <namespace> '{
   "reason": "<user-provided reason>",
   "raw_impulse": "<raw_impulse from Step 0, or omit the key entirely if it was skipped>"
 }'
@@ -453,13 +453,13 @@ Why did intent shift? (one sentence for the record)
 ```
 Record immediately:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py set-intent <namespace> \
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-intent <namespace> \
   '{"text": "<current intent text>", "reason": "<user reason>"}'
 ```
 
 **N — revert:**
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py set-intent <namespace> \
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-intent <namespace> \
   '{"text": "<prev_intent text>", "reason": "reverted at ORIENT — drift was not intentional"}'
 ```
 Confirm: `✓ Intent reverted. Proceeding with original direction.`
@@ -675,7 +675,7 @@ not redundant, which is why both can appear as separate lines in the same batch 
 
 Once confirmed, open the session:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py open <namespace> '<json_array_of_goals>' '<raw_impulse from Step 0, or omit the third arg entirely if it was skipped>'
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py open <namespace> '<json_array_of_goals>' '<raw_impulse from Step 0, or omit the third arg entirely if it was skipped>'
 ```
 The third argument is `raw_impulse` captured at Step 0 (P74 Phase 1) — omit it if the
 user skipped that prompt. This call only stashes the value on a genuine first open; if
@@ -688,7 +688,7 @@ Then populate the todo list with the confirmed goals, if this runtime has a
 TodoWrite-equivalent tool (use it). **Either way**, as each confirmed goal actually
 completes during the session, also call:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py set-goal-status <namespace> '{"index": <0-based goal index>, "done": true}'
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-goal-status <namespace> '{"index": <0-based goal index>, "done": true}'
 ```
 This is what the Drift nudge check (and any future mid-session goal-progress check)
 reads when no host todo tool is available — `open` already initialises
@@ -714,7 +714,7 @@ only runs the free-text follow-up loop, and only if item 7's answer was **Y**:
 
 - **Y** (from Step 3f item 7) → for each assumption the user provides, log as a hypothesis. If the assumption clearly bets on one or more of this session's confirmed goals, include `goal_origin` (the goal's index/indices) in the same call — `log-learning` already accepts and stores it on create, so this does not require a second write:
   ```bash
-  python3 ~/.claude/skills/compass/scripts/compass.py log-learning <namespace> '{
+  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py log-learning <namespace> '{
     "text": "<assumption text>",
     "tags": ["<inferred tag>"],
     "learning_type": "hypothesis",
@@ -740,7 +740,7 @@ Confirm to the user:
 
 After the confirm, run silently:
 ```bash
-python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
   '{"query": "<all confirmed goals joined by space>", "limit": 3}'
 ```
 
