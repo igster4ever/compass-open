@@ -273,6 +273,15 @@ deviations from it are called out per step.
 their prompts no longer fire here — see the v1 consolidation note above. Nothing to do
 at this point in ORIENT; the flags are already sitting in `context` from Step 1.
 
+**Checklist (2026-09-24, skill-feedback weight-2):** a side-quest that consumes a lot of
+turn attention (e.g. batch-verifying a large stale-bullet list at Step 2c) makes it easy
+to jump straight from ORIENT into Step 3 DECIDE, silently skipping the remaining 2b.x
+sub-steps. Before proceeding past ORIENT, confirm each of the following has actually been
+checked this session (skip is a valid outcome for any of them — the point is not to forget
+to look):
+☐ 2b.1 (assumption audit) · ☐ 2b.3b (CLAUDE.md hygiene) · ☐ 2b.4b (SkillOpt) ·
+☐ 2b.5 (code context) · ☐ 2b.6 / 3f-item-3 (dream pass)
+
 ### Step 2b.1 — Strategic Assumption Audit (P47)
 
 Check `assumption_audit_due` from read output. If `false`, skip entirely. If `true`, read
