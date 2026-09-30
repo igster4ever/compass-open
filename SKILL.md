@@ -200,7 +200,7 @@ Flag all as goal candidates, same as carry-forward.
 <last_session_hit_rate or "no prior session">
 
 **Reality completeness (P22):** *(omit if score is null)*
-<reality_completeness.score>% of reality bullets carry completion markers (<achieved>/<total>)
+<reality_completeness.score>% of reality bullets achieved (<achieved>/<total>) — bullets under a "What exists and works"-style header count as achieved; other sections need their own marker
 
 **Session complexity (P24):** *(omit if session not open or avg_last_5 is null)*
 <session_complexity.current> compass calls (avg: <session_complexity.avg_last_5> over last 5 sessions)
