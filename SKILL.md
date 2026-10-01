@@ -400,11 +400,8 @@ provide the same persistent cross-session surfacing this was meant for.)*
 Before proceeding to DECIDE, check if this namespace was last closed less than 4 hours ago
 (or less than the configured cooldown, if customised):
 
-```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py read <namespace>
-```
-
-Check `last_close` timestamp. Calculate hours elapsed. If elapsed time is less than the
+Use `context.last_close` from Step 1's `generate-orient-brief` output — do not run a
+second `read` for it (it rebuilds the same ~80KB context). Calculate hours elapsed. If elapsed time is less than the
 configured `session_cooldown_hours` (default: 4):
 
 ```
@@ -587,12 +584,12 @@ own batching rule).
 Build one numbered list, one line per item, **omitting any line whose trigger is false**
 (never renumber around a gap — a line's number is stable across a session):
 
-1. **`[CODE REVIEW]`** — only if `code_review_due` is true. Cite `sessions_since_review`/
+1. **`[CODE REVIEW]`** — only if `code_review_due` is true. Cite `code_review_status.sessions_since_review`/
    `interval_sessions` (or the complexity-pull-forward basis from `code_review_status`,
    same framing rule the old Step 2b.3 used) and `code_review_defer_count`. Default: **yes**.
-2. **`[RESEARCH]`** — only if `research_due` is true. Cite `sessions_since_research`/
+2. **`[RESEARCH]`** — only if `research_due` is true. Cite `research_status.sessions_since_research`/
    `interval_sessions` (or the pull-forward basis) and `research_defer_count`. Default: **yes**.
-3. **`[DREAM PASS]`** — only if `dream_due` is true. Cite `sessions_since_dream`/
+3. **`[DREAM PASS]`** — only if `dream_due` is true. Cite `dream_status.sessions_since_dream`/
    `interval_sessions`. Default: **yes**.
 4. **`[STRETCH GOAL]`** — only if either old-3b.5 trigger holds (all confirmed goals are
    execution tasks with none exploratory/design, OR the last 3 `goal_completion_trend`
@@ -607,8 +604,8 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
 
 Render:
 ```
-1. [CODE REVIEW] due (<sessions_since_review>/<interval_sessions> sessions, deferred <N>×) → run? (default: yes)
-2. [RESEARCH] due (<sessions_since_research>/<interval_sessions> sessions, deferred <N>×) → scope Q&A? (default: yes)
+1. [CODE REVIEW] due (<sessions_since_review>/<interval_sessions> sessions, deferred <N>×) → run? (default: yes)<escalation hint>
+2. [RESEARCH] due (<sessions_since_research>/<interval_sessions> sessions, deferred <N>×) → scope Q&A? (default: yes)<escalation hint>
 3. [DREAM PASS] due (<sessions_since_dream>/<interval_sessions> sessions) → run? (default: yes)
 4. [STRETCH GOAL] <trigger: all-execution-tasks | 3× 100% completion> → add one? (default: no)
 5. [GOAL TYPES] tag each goal E/X, e.g. "EEXEE" for 5 goals (default: all E)
@@ -617,6 +614,13 @@ Render:
 
 Accept all defaults, or override by number? [Enter to accept all]
 ```
+
+**`<escalation hint>` (items 1/2):** `defer-code-review`/`defer-research` escalate once the
+defer count reaches 2, so when `code_review_defer_count` (or `research_defer_count`) is
+already ≥ 1, append ` — declining adds it as an overdue goal` to that line. Otherwise
+render nothing. The user then knows the cost of declining before choosing (2026-09-30: a
+decline escalated into a goal the user never wanted, which was abandoned at close). The
+escalation itself stays — it is a designed check.
 
 If none of items 1–4 are triggered this session, the list only shows 5/6/7 — never fully
 empty (5/6/7 are always present, matching the old always-offered behaviour of 3b.6/3b.8
