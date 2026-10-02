@@ -10,16 +10,6 @@ half — Step 0 through Step 4.6 — from the pre-mediation impulse capture thro
 the goal-conditioned supplemental retrieval that runs right after session
 confirmation.
 
-**v1 consolidation (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
-in the `compass` skill):** the separate code-review-due / research-due / dream-pass-due
-prompts (formerly Steps 2b.3, 2b.4, 2b.6) and the separate ambition-nudge / goal-type-tagging
-/ verification-contract prompts (formerly Steps 3b.5, 3b.6, 3b.8) are now one batched screen
-— **Step 3f** — fired once, right after the DECIDE goal list is confirmed. The `*_due` flags
-themselves are still read at Step 1 OBSERVE; only the *prompt* moved. Step 4.5's Y/n gate
-is folded into Step 3f's item 7; only its free-text-per-hypothesis follow-up loop still runs
-where Step 4.5 used to be. v2 (per-item confidence-gated auto-apply using P59 override
-history) is scoped in the same plan doc but not built — see the Strategic backlog.
-
 **Inputs (from invocation context):**
 - `namespace` — the compass namespace opening
 
@@ -139,59 +129,18 @@ Rules:
 - This appears **before** the `## 🧭 Compass` header, not embedded in the detail list.
 - Omit on first-ever session (no history to synthesise from).
 
-Present a concise orient brief to the user. Format:
+Present a concise orient brief to the user. Use Step 1's `brief_markdown` as the base —
+it already renders the header, intent, reality completeness, signals since last session,
+top learnings (with the P56 zone-grouping rule), cross-project and cross-namespace signals,
+carry-forward, tactical backlog and relevant artefacts. Flag every carry-forward and
+tactical backlog item as a goal candidate. Add the sections it does not render:
 
 ```
-## 🧭 Compass — <namespace>
-Last session: <last_close or "never">
-
-**Intent:** <one-line summary of intent.md>
-
 **Reality (last known):**
 <2–4 bullet summary of reality.md>
 
-**Signals since last session:**
-<git commits if any, grouped by theme; otherwise "none">
-
-**Top learnings in play:** *(P56 zone-grouping — see below)*
-<top 3 learnings with weight indicators — use ★ for weight ≥3, · for weight 1–2>
-
-**Cross-project signals (global):** *(only if tag overlap found — P7)*
-<up to 3 global learnings with matching tags — omit section if none>
-
 **External research signals:** *(only if `external_signals` array is non-empty — P11)*
 <up to 3 most recent signals from external_signals.jsonl — prefix each with [research] so provenance is visible>
-
-**Relevant artefacts:** *(only if tag-matched artefacts found — P41)*
-<up to 2 artefacts: "title" (type, date) — description — omit section entirely if none>
-
-**📡 Cross-namespace signals:** *(only if watch-signals returned empty: false — P54)*
-For each watched namespace with signals, group as:
-  `<watched_ns>`: <N> decisions, <M> learnings
-  · [decision] "<decision text, first 80 chars>" [tag1, tag2]
-  · [learning] "<learning text, first 80 chars>" [w:<weight>]
-Omit section entirely when empty: true.
-
-*If `bootstrapped: true` (P54 Phase 2)* — this namespace has no tagged learnings of its own yet,
-so signals below are unweighted tag-presence matches rather than tag-frequency-scored ones. Add
-one line under the section header, not per-signal:
-  ↳ *(bootstrapping: this namespace has no learnings yet — signals shown are unscored tag matches)*
-
-**Carry-forward from last session:** *(only if incomplete list is non-empty — P5)*
-For each item, show text plus any reason annotation if present (P14):
-  • "goal text" [blocked: waiting on Y API]
-  • "goal text" [abandoned]
-  • "goal text"  ← no status captured
-Flag all as goal candidates.
-
-**Tactical backlog:** *(only if `backlog_tactical` is non-empty — docs/namespace-backlog-standard.md)*
-`backlog_tactical` is already in `read`'s output — no extra command needed. These are
-items the namespace's own reality.md marked ready-to-act-on (`## Backlog` → `### Tactical`),
-distinct from carry-forward (unfinished *goals* from last session) — a Tactical backlog
-item may never have been a session goal at all. Show each with its `[source: ...]` tag intact:
-  • "item text" [source: code-review-2026-07-10]
-  • "item text" [source: research]
-Flag all as goal candidates, same as carry-forward.
 
 **Drift / gaps detected:**
 <1–3 specific gaps between intent and reality — be direct>
@@ -199,32 +148,14 @@ Flag all as goal candidates, same as carry-forward.
 **Goal hit-rate (P0.2):**
 <last_session_hit_rate or "no prior session">
 
-**Reality completeness (P22):** *(omit if score is null)*
-<reality_completeness.score>% of reality bullets achieved (<achieved>/<total>) — bullets under a "What exists and works"-style header count as achieved; other sections need their own marker
-
 **Session complexity (P24):** *(omit if session not open or avg_last_5 is null)*
 <session_complexity.current> compass calls (avg: <session_complexity.avg_last_5> over last 5 sessions)
 ```
 
-**P56 — Top learnings zone-grouping rule:** each entry in `top_learnings` may carry a `zone` field (`golden` | `warning` | `preference` | absent). If **2 or more** of the surfaced learnings carry a zone, group the "Top learnings in play" block by zone instead of one flat list:
-
-```
-**Top learnings in play:**
-
-  ✓ Golden (replicate):
-    ★ "<learning text>" [w:3]
-
-  ⚠ Warning (avoid):
-    · "<learning text>" [w:1]
-
-  ○ Preference:
-    · "<learning text>" [w:2]
-
-  (unclassified):
-    ★ "<learning text>" [w:3]
-```
-
-If **fewer than 2** surfaced learnings carry a zone, render the original flat weight-sorted list (today's format) — grouping a mostly-unclassified corpus into near-empty buckets is worse than the flat list it replaces.
+The full section-by-section brief format and the P56 zone-grouping rule are in
+`~/.claude/skills/compass/scripts/prompts/orient-brief-format.md`. Read it only when you
+must render a section yourself: `brief_markdown` is missing, or Step 1's BM25 query
+changed the top-learnings ranking.
 
 **Conditional advisories:** check these fields from the current `read` output —
 `session_complexity.elevated` · `goal_stats.total_goals > 0 AND goal_stats.hit_rate < 70` ·
@@ -291,9 +222,7 @@ counter reset.
 
 ### Step 2b.3 — Periodic code quality review (moved)
 
-`code_review_due` and its complexity-pull-forward signal are still read at Step 1
-OBSERVE — nothing fires here. The prompt, spawn-agent flow, and defer/escalate path
-now live in **Step 3f**, item 1 (v1 consolidation, 2026-09-01).
+Moved to **Step 3f**, item 1. The flag is still read at Step 1 OBSERVE.
 
 ---
 
@@ -309,40 +238,16 @@ counter (`record-claude-review <namespace>`) and skip silently. Otherwise read
 
 ### Step 2b.4 — Periodic external research (P11) — compass-research-scope (moved)
 
-`research_due` and its complexity-pull-forward signal are still read at Step 1 OBSERVE —
-nothing fires here. The prompt, `compass-research-scope` invocation, and defer/escalate
-path now live in **Step 3f**, item 2 (v1 consolidation, 2026-09-01).
+Moved to **Step 3f**, item 2. The flag is still read at Step 1 OBSERVE.
 
 ---
 
 ### Step 2b.4b — Periodic SKILL.md optimisation pass (P-SkillOpt)
 
-Check `skill_opt_due` from read output. If true, check `skill_opt_status.friction_gate.sufficient_signal` (P61c) before choosing which prompt to surface.
-
-**`sufficient_signal: true`** (≥3 unresolved `skill_feedback.jsonl` entries) — surface the standard prompt:
-```
-🔧 SKILL.md optimisation pass due — <sessions_since_skill_opt> sessions since last run.
-   Run evidence collection? [Y / n / later]
-```
-
-**`sufficient_signal: false`** — thin signal, same failure mode as a too-small validation split (diagnose→propose has little to act on). Surface the friction-aware variant instead:
-```
-🔧 SKILL.md optimisation pass due — <sessions_since_skill_opt> sessions since last run.
-   Only <open_feedback_count> skill-feedback entries logged since the last pass (threshold: <threshold>).
-   Proceed anyway, or wait for more signal? [Y — proceed / n / later — wait]
-```
-Treat **Y** identically to the standard prompt's Y (run evidence collection). **n / later** defer exactly as below — do not add a second deferral path.
-
-#### Y — Run evidence collection + reflect pass
-
-Read `~/.claude/skills/compass/scripts/prompts/skillopt-protocol.md` and follow it. It
-covers the full S1–S6 cycle: freezing/scoring the holdout, the three-pass reflect
-protocol (analyst_error → analyst_success → merge_final), edit proposal/apply/reject,
-and the promote/reject/re-freeze decision at the end.
-
-#### n or later — Defer
-
-Continue silently. Counter is not reset.
+Check `skill_opt_due` from read output. If `false`, skip entirely. If `true`, read
+`~/.claude/skills/compass/scripts/prompts/skillopt-protocol.md` and follow it from its "Gate prompt (Step 2b.4b)"
+section — the P61c friction-gate prompt variants, then the Y (evidence collection + reflect pass) or
+n/later (defer, counter not reset) path.
 
 ---
 
@@ -367,9 +272,7 @@ no confirmation needed. Continue immediately to Step 2c.
 
 ### Step 2b.6 — Inter-loop dream pass (P12.1) (moved)
 
-`dream_due` is still read at Step 1 OBSERVE — nothing fires here. The prompt and
-`dream-pass-protocol.md` invocation now live in **Step 3f**, item 3 (v1 consolidation,
-2026-09-01).
+Moved to **Step 3f**, item 3. The flag is still read at Step 1 OBSERVE.
 
 ### Step 2c — Reality validation protocol (P0.1)
 
@@ -385,16 +288,6 @@ Check `pending_validations` from the `read` output. If empty, skip to Step 2f. I
 non-empty, read the same `reality-and-hypothesis-validation.md` file's Step 2d section —
 it covers the Confirmed/Disproven/Untested prompt per expired hypothesis.
 
-*(Former Step 2e — "Deferred skill escalation" (P1.3) — removed 2026-09-09: the only
-`defer-opportunity` call site (`compass-close/SKILL.md`, old "Deferred escalations"
-paragraph) only re-deferred opportunities already in `escalation_candidates`, and
-nothing ever wrote the first entry — `skill-opportunity-detection.md`'s own "D (defer)"
-path writes straight to `reality.md`'s Strategic backlog instead, bypassing this
-mechanism entirely. `escalation_candidates` could never be non-empty, so this step was
-dead code. `deferred_opportunities`/`cmd_defer_opportunity`/`cmd_resolve_opportunity`/
-`escalation_candidates` removed from compass's script; Strategic backlog bullets already
-provide the same persistent cross-session surfacing this was meant for.)*
-
 ### Step 2f — Session hygiene precondition check (P4.2)
 
 Before proceeding to DECIDE, check if this namespace was last closed less than 4 hours ago
@@ -402,75 +295,22 @@ Before proceeding to DECIDE, check if this namespace was last closed less than 4
 
 Use `context.last_close` from Step 1's `generate-orient-brief` output — do not run a
 second `read` for it (it rebuilds the same ~80KB context). Calculate hours elapsed. If elapsed time is less than the
-configured `session_cooldown_hours` (default: 4):
-
-```
-⏸ Session hygiene violation — namespace reopened within 4h cooldown.
-Last closed: <N>h ago.
-
-Why are you resuming so soon? (brief reason)
-```
-
-**This is a blocking check.** User must provide a reason (one sentence minimum) to proceed.
-
-Once they provide a reason, acknowledge the violation:
-
-```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py acknowledge-cooldown-violation <namespace> '{
-  "reason": "<user-provided reason>",
-  "raw_impulse": "<raw_impulse from Step 0, or omit the key entirely if it was skipped>"
-}'
-```
-
-This opens the session immediately. Continue to DECIDE as normal — the `open` call in
-Step 4 is idempotent when a session is already open: it will update `planned_actions`
-without re-incrementing any counters. No special handling required.
+configured `session_cooldown_hours` (default: 4), read
+`~/.claude/skills/compass/scripts/prompts/orient-gates.md`'s Step 2f section and follow it — a
+**blocking** reason prompt, then `acknowledge-cooldown-violation`, which opens the session itself.
 
 If no violation (last_close is more than cooldown_hours ago, or never closed), skip silently.
 
 ### Step 2g — Git vs reality reconciliation (moved)
 
-The scan itself (stale "missing" bullets vs `gitlog`; new files not in reality) and its
-prompt now run as item 1 of **Step 3b**'s consolidated pre-lock advisory batch (v2
-consolidation, 2026-09-16) — grouped with vague-goal/research-fork/domain-novelty since
-none of the four has a hard sequential dependency on another. `gitlog` is already fetched
-at Step 1 OBSERVE, so nothing needs fetching differently here; only the prompt's timing
-moved, from before DECIDE to right after it. See Step 3b for the full scan/prompt/routing
-logic — nothing fires at this point in ORIENT anymore.
+Moved to **Step 3b**, item 1 (the scan and its prompt). `gitlog` is still fetched at Step 1.
 
 ### Step 2h — Intent drift check (P1.2)
 
 Check `intent_changed` from the read output. If `false`: skip silently.
 
-If `true`, surface before DECIDE — this is a gating check, the session direction depends on it:
-
-```
-⚠ Intent drift detected.
-
-**Previous:** <prev_intent from read output>
-**Current:**  <intent from read output>
-
-Deliberate shift? Y (confirm) / N (revert)
-```
-
-**Y — confirm:**
-```
-Why did intent shift? (one sentence for the record)
-```
-Record immediately:
-```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-intent <namespace> \
-  '{"text": "<current intent text>", "reason": "<user reason>"}'
-```
-
-**N — revert:**
-```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-intent <namespace> \
-  '{"text": "<prev_intent text>", "reason": "reverted at ORIENT — drift was not intentional"}'
-```
-Confirm: `✓ Intent reverted. Proceeding with original direction.`
-
-**Rule:** action happens now, at ORIENT — do not re-prompt at close.
+If `true`, read `~/.claude/skills/compass/scripts/prompts/orient-gates.md`'s Step 2h section and follow
+it — a gating Y/N drift prompt recorded with `set-intent` now, at ORIENT; never re-prompted at close.
 
 ### Step 3 — DECIDE
 
@@ -499,24 +339,7 @@ Wait for confirmation. Accept additions, removals, rephrasing. If the user just 
 
 ### Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)
 
-Run **after** Step 3 (DECIDE goal list confirmed), **before** Step 3f. Replaces the
-formerly-separate prompts for git-vs-reality reconciliation (old Step 2g — moved here
-from ORIENT-time, since its scan only needs `gitlog` + `reality`, both already available,
-and it is advisory/non-blocking like the other three), vague-goal detection (old Step 3b),
-pre-implementation research-fork detection (old Step 3d), and domain-novelty check (old
-Step 3e). Same rationale as Step 3f's own v1 consolidation: none of these four checks has
-a hard sequential dependency on another, so one batch costs one round trip instead of four
-(Strategic backlog `[HIGH PRIORITY]` item, 2026-09-14 session audit — ~13 round trips
-measured across a routine 4-goal open+close even after v1).
-
-**Trade-off note (2g's reposition):** moving Step 2g from before-DECIDE to after-DECIDE
-means a git-reconciliation hit is now caught *after* the user has already proposed/confirmed
-a goal that might turn out to be already resolved, not before. Judged acceptable — 2g was
-already documented as "a signal, not a gate," so catching it here, still before Step 4 lock,
-still fully corrects the goal list at zero extra round-trip cost; the only thing lost is
-not shaping the *initial* numbered proposal in Step 3 around it. Confidence: 8/10 for this
-namespace's cadence (low daily session count, advisory-only checks); revisit if a future
-namespace's DECIDE regularly locks in goals that item 1 below then has to walk back.
+Run **after** Step 3 (DECIDE goal list confirmed), **before** Step 3f.
 
 Build one numbered list, one line per item, **omitting any line whose trigger is false**
 (never renumber around a gap):
@@ -534,52 +357,14 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
    touches a domain with no results or only >90-day-old results, and at least 3 prior
    sessions exist.
 
-Render:
-```
-1. [GIT/REALITY] <N> proposed reality update(s) found (top: "<preview>") → review? (default: yes)
-2. [VAGUE GOALS] Goal(s) <N, M> look broad → sharpen with /goal? (default: no)
-3. [RESEARCH FORK] Goal <N> ("<condensed text>") touches a decision-verb area → check prior decisions? (default: yes)
-4. [DOMAIN NOVELTY] Goal <N> touches an unexplored domain → consider an exploratory addition? (default: no)
-
-Accept all defaults, or override by number? [Enter to accept all]
-```
-
-If **none** of 1–4 trigger: skip this entire step silently — unlike Step 3f, nothing here
-is always-present, so an all-false batch renders no screen at all.
-
-**Parsing overrides:** same convention as Step 3f — a bare **Enter** accepts every default;
-otherwise parse space-separated `<N><value>` tokens (`1n`, `2Y`, `3n`, `4Y`, in any
-combination).
-
-**Route each item's answer exactly as its original step did:**
-
-| Item | On yes / non-default | On no / default-skip |
-|---|---|---|
-| 1 GIT/REALITY | Present the full per-match detail exactly as old Step 2g specified (`⚠ Git vs reality — <N> proposed update(s)` block, Y/N/M per match) and process responses the same way — `remove-reality-bullet`/`append-reality-bullet` per accepted item (see old Step 2g's note on their two-plain-string calling convention, not JSON). | Skip; bullets stay as-is. |
-| 2 VAGUE GOALS | Invoke the `goal` skill in `--session` mode per flagged goal, exactly as old Step 3b's Y-path. Re-present the updated goal list for a final confirm before Step 3f. | Lock as-is; note in the open payload that these goals have no measurable criteria (surface as low-confidence at close if incomplete). |
-| 3 RESEARCH FORK | Read `~/.claude/skills/compass/scripts/prompts/research-fork-detection.md` and follow it in full — it renders its own hits/no-hits sub-prompt and the no-go/deferred override; this item's "yes" is the gate into that file, not a duplicate of its content. | Skip; no research-fork check this session. |
-| 4 DOMAIN NOVELTY | Follow old Step 3e's Y-path: ask *"One sentence: what would you want to learn or confirm about this area?"*, add as a goal candidate or log as a hypothesis. | Dismiss; do not re-flag. |
-
-**Rules:**
-- One rendered screen for whichever of 1–4 triggered. Items whose "yes" path has its own
-  sub-prompts (1's per-match Y/N/M, 2's re-confirm, 3's file, 4's one-sentence ask) still
-  run those immediately after parsing the response — consolidation removes each item's
-  separate *initial* gate, not the necessary follow-up content an accepted item needs.
-- Batch is entirely skippable — if all four triggers are false, render nothing, not even
-  an empty list (unlike Step 3f, which always shows items 5–7).
-- Only fire once per DECIDE — never re-run mid-session or at close.
+If **none** of 1–4 trigger, skip this step silently and render nothing. Otherwise read
+`~/.claude/skills/compass/scripts/prompts/pre-lock-advisory-batch.md` and follow it — the
+one-screen render, override parsing, per-item routing and rules.
 
 ### Step 3f — Consolidated DECIDE-tail batch (v1 consolidation, 2026-09-01)
 
 Run **after** Step 3b (the consolidated pre-lock advisory batch), **before** Step 3c
 (architecture check).
-Replaces the formerly-separate prompts for code review due (old 2b.3), research due
-(old 2b.4), dream pass due (old 2b.6), goal ambition nudge (old 3b.5), goal type tagging
-(old 3b.6), and verification contract offer (old 3b.8) — plus folds in the Y/n gate half
-of hypothesis elicitation (old Step 4.5's first question; the free-text-per-hypothesis
-follow-up still runs separately after Step 4, since that needs new user-supplied content
-the assistant cannot infer — see `docs/2026-08-31-consolidate-open-close-prompts-plan.md`'s
-own batching rule).
 
 Build one numbered list, one line per item, **omitting any line whose trigger is false**
 (never renumber around a gap — a line's number is stable across a session):
@@ -602,6 +387,10 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
 6. **`[CONTRACTS]`** — always present. Default: **no** (skip; `goal_contracts` stays empty).
 7. **`[HYPOTHESES]`** — always present. Default: **no**.
 
+If item 1, 2 or 3 renders, read `~/.claude/skills/compass/scripts/prompts/decide-tail-cadence-items.md`
+first — it has the `<escalation hint>` rule for lines 1/2, the routing for items 1–3 and
+the escalation-after-lock note. Skip it when only items 4–7 render.
+
 Render:
 ```
 1. [CODE REVIEW] due (<sessions_since_review>/<interval_sessions> sessions, deferred <N>×) → run? (default: yes)<escalation hint>
@@ -615,13 +404,6 @@ Render:
 Accept all defaults, or override by number? [Enter to accept all]
 ```
 
-**`<escalation hint>` (items 1/2):** `defer-code-review`/`defer-research` escalate once the
-defer count reaches 2, so when `code_review_defer_count` (or `research_defer_count`) is
-already ≥ 1, append ` — declining adds it as an overdue goal` to that line. Otherwise
-render nothing. The user then knows the cost of declining before choosing (2026-09-30: a
-decline escalated into a goal the user never wanted, which was abandoned at close). The
-escalation itself stays — it is a designed check.
-
 If none of items 1–4 are triggered this session, the list only shows 5/6/7 — never fully
 empty (5/6/7 are always present, matching the old always-offered behaviour of 3b.6/3b.8
 and the always-optional-but-always-asked 4.5 gate).
@@ -630,27 +412,15 @@ and the always-optional-but-always-asked 4.5 gate).
 space-separated tokens, each `<N><value>` (or `<N>:<value>` for a longer value):
 `1n` / `1later` / `4Y` / `5:EEXX` / `6S` / `7Y`, in any combination.
 
-**Route each item's answer exactly as its original step did:**
+**Route each item's answer exactly as its original step did** (items 1–3: see
+`decide-tail-cadence-items.md`):
 
 | Item | On yes / non-default | On no / default-skip |
 |---|---|---|
-| 1 CODE REVIEW | Spawn the review agent: `mkdir -p ~/.claude/loop/<namespace>/code_reviews`, spawn an Agent with the prompt template at `~/.claude/skills/compass/scripts/prompts/code-review-agent.md` (substitute `<target_path_or_diff>` with `<repo_path>`, pass verbatim). Then: save the report to `~/.claude/loop/<namespace>/code_reviews/<YYYY-MM-DD>.md`; scan it for `[CRITICAL]` lines and add each directly to the session todo list (prefixed `[code review]`, no asking); call `record-review <namespace>`; surface the report path plus up to 5 `[HIGH]`/`[CRITICAL]` findings and offer *"Extract top issues as next-session goals? [Y/n]"* — **Y** appends up to 3 (user-editable) to `reality.md`'s `## Backlog` → `### Tactical` via `append-reality-bullet <namespace> "### Tactical" "<text>"` (two plain strings, not JSON), tagged `[source: code-review-<date>]`. | `later` and `n` both defer: `defer-code-review <namespace>`. Check `defer_count`/`escalate`. `escalate: false` → no further comment. `escalate: true` → append *"Run periodic code quality review (overdue)"* to the already-confirmed goal list and say so (see escalation note below — DECIDE has already run by this point in the v1 flow). |
-| 2 RESEARCH | Invoke `/compass-research-scope namespace=<namespace>` — handles its own Q&A, agent spawn, `record-research`, and result parsing (the sub-skill has no gate of its own; this Y/non-default answer *is* the gate). | `later`/`n` → `defer-research <namespace>` (called directly here, never via the sub-skill). Check `defer_count`/`escalate`. `escalate: true` → append *"Run periodic external research pass (overdue)"* to the confirmed goal list, same escalation-after-lock note as item 1. |
-| 3 DREAM PASS | Read `~/.claude/skills/compass/scripts/prompts/dream-pass-protocol.md` and follow it. | Skip; counter untouched (the old Step 2b.6 had no defer command either — `dream_due` simply re-fires next ORIENT). |
 | 4 STRETCH GOAL | Ask: *"One sentence: what's the open design question or hypothesis worth tackling?"* Add as an additional confirmed goal. | Proceed silently. |
 | 5 GOAL TYPES | Parse the string into a `goal_types` array (e.g. `"EXE"` → `["exploit", "explore", "exploit"]`). Store alongside goals; passed in the close payload as `"goal_types": [...]`. | Default-fill `goal_types` as all `"exploit"` for the confirmed goal count (see the item-5 note above). |
 | 6 CONTRACTS | Read `~/.claude/skills/compass/scripts/prompts/contract-and-architecture-checks.md`'s "Verification contract offer" section and follow its Y/S per-goal criteria capture (`log-goal-contract` per goal). | `goal_contracts` stays empty for this session. |
 | 7 HYPOTHESES | Proceed into Step 4.5's existing per-assumption free-text loop (unchanged — this is the part that needs new user-supplied content, so it stays interactive after Step 4's lock). | Skip Step 4.5 entirely; no hypotheses logged. |
-
-**Escalation-after-lock note (items 1/2 only):** Step 3 (DECIDE) has already run and the
-goal list is already confirmed by the time Step 3f fires — a deliberate ordering change
-from the pre-v1 flow, where code-review/research escalation used to happen *before* goals
-were locked, as part of the original numbered DECIDE proposal. An `escalate: true` response
-here means: append the item to the already-confirmed list and say so plainly, e.g.:
-```
-⬆ Code review escalated (deferred <N>×) — adding to this session's already-confirmed goals.
-```
-Do not re-open the whole goal list for edits at this point — just append and continue.
 
 **Rules:**
 - One rendered screen. One round of overrides. No follow-up screen for items 1–3, 6 —
@@ -670,17 +440,11 @@ service/module-name detection and the pom.xml dependency-declaration check.
 
 ### Step 3d — Pre-implementation research fork detection (P13) (moved)
 
-Trigger check and full logic now live as item 3 of **Step 3b**'s consolidated pre-lock
-advisory batch (v2 consolidation, 2026-09-16) — nothing fires at this point anymore.
-`research-fork-detection.md` is unchanged; only its invocation site moved.
+Moved to **Step 3b**, item 3.
 
 ### Step 3e — Domain novelty check (P21) (moved)
 
-Trigger check and full logic now live as item 4 of **Step 3b**'s consolidated pre-lock
-advisory batch (v2 consolidation, 2026-09-16) — nothing fires at this point anymore.
-**Relationship to P13** (unchanged): P13/item-3 checks for *prior decisions* on a chosen
-approach; P21/item-4 checks for *absence of prior experience* in a domain — complementary,
-not redundant, which is why both can appear as separate lines in the same batch screen.
+Moved to **Step 3b**, item 4 (complements item 3: prior experience vs prior decisions).
 
 ---
 
@@ -725,24 +489,9 @@ required:
 The Y/n gate ("Log any to validate at close?") is now item 7 of Step 3f — this step
 only runs the free-text follow-up loop, and only if item 7's answer was **Y**:
 
-- **Y** (from Step 3f item 7) → for each assumption the user provides, log as a hypothesis. If the assumption clearly bets on one or more of this session's confirmed goals, include `goal_origin` (the goal's index/indices) in the same call — `log-learning` already accepts and stores it on create, so this does not require a second write:
-  ```bash
-  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py log-learning <namespace> '{
-    "text": "<assumption text>",
-    "tags": ["<inferred tag>"],
-    "learning_type": "hypothesis",
-    "confidence": "<high|medium|low — ask if unclear>",
-    "test_window": "end of session",
-    "goal_origin": [<goal index(es), or omit if cross-goal/exploratory>]
-  }'
-  ```
-  Accept one assumption per prompt; ask "Another? [Y / n]" until done or n.
-  These surface in the next close's `pending_validations`.
-
-**Rule:** the Y/n gate (Step 3f item 7) fires once, never re-asked mid-session; the
-free-text loop above only runs at all when that gate came back Y. No script changes
-needed (log-learning already supports `goal_origin` on both create and weight-increment
-paths — see `_upsert_learning`).
+- **Y** (from Step 3f item 7) → read
+  `~/.claude/skills/compass/scripts/prompts/hypothesis-elicitation.md` and follow it — one
+  `log-learning` hypothesis per assumption, until the user says n.
 
 Confirm to the user:
 ```
