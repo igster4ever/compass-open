@@ -375,8 +375,8 @@ no confirmation needed. Continue immediately to Step 2c.
 
 Check `reality_stale_bullets` from the `read` output. If empty, skip to Step 2d's check
 below. If non-empty, read `~/.claude/skills/compass/scripts/prompts/reality-and-hypothesis-validation.md`
-and follow its Step 2c section — it covers the implicit filesystem/git-history auto-verify
-pass and the manual confirmation prompt for anything that survives it. **This is a gating
+and follow its Step 2c section — one `auto-verify-reality` call (filesystem/git evidence,
+stamped in Python) and the manual confirmation prompt for anything left in `manual`. **This is a gating
 step** — do not proceed to DECIDE until it resolves.
 
 ### Step 2d — Hypothesis validation (P1.1)
