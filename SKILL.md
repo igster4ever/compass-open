@@ -532,12 +532,11 @@ Once Step 4.5/4.6 confirms and the todo list is set, this sub-skill is done — 
 conversation simply continues into the session's work. There is nothing to hand
 back to the parent router.
 
-**Prompt-count tally (2026-09-01, `docs/2026-08-31-consolidate-open-close-prompts-plan.md`
-in the `compass` skill):** keep a running count of every distinct interactive screen
-actually presented to the user across Steps 0–4.6 — an "interactive screen" is one round
-trip that waited for a response, not one script call or one bullet within a screen (Step
-3f's batch counts as **one**, however many of its 7 items rendered). Carry this number
-forward in working memory as `open_prompt_count` for the rest of the session — it gets
-passed into the final `close` payload at `compass-close`'s Step 6, alongside its own
-`close_prompt_count` tally, purely as write-only session metrics (no script or trend
-reads it yet — see the Strategic backlog for the deferred read-side `avg_last_5`).
+**Prompt-count tally:** each time Steps 0–4.6 show the user an interactive screen, run
+```bash
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py tally-prompt <namespace> open
+```
+An "interactive screen" is one round trip that waited for a response, not one script
+call or one bullet within a screen (Step 3f's batch counts as **one**, however many of
+its 7 items rendered). The script keeps the count across `open`, and `close` records it
+as `open_prompt_count` — don't keep or estimate the number yourself.
