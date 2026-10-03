@@ -349,6 +349,11 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
 
 1. **`[GIT/REALITY]`** — only if old Step 2g's scan (stale "missing"/Backlog bullets vs
    `gitlog`; new files not in reality's "What exists") finds at least one match.
+   `gitlog` covers only this namespace's own repo. For each Backlog bullet that names
+   another repo (a sibling skill such as `compass-research-scope`, or a namespace such as
+   `agentic-loopkit`), also run `git -C <that repo> log --oneline -20` — the repo is
+   `~/.claude/skills/<name>` or that namespace's `repo_path`. A commit there that does
+   what the bullet asks is a match too; preview it as `<repo>@<hash>`.
 2. **`[VAGUE GOALS]`** — only if one or more confirmed goals match old Step 3b's vagueness
    signals (*"work on", "look at", "investigate", "sort out", "pick up", "think about",
    "explore", "continue with", "review", "have a look"*; fewer than 5 words with no
