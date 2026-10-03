@@ -71,7 +71,10 @@ with a targeted one-liner, e.g.:
 ```
 and pull individual `context.*` fields (the cadence-due flags Step 2b onward check,
 `session_index` for `expand-session` lookups, etc.) the same way, one field at a time,
-rather than loading the full structure into context at once.
+rather than loading the full structure into context at once. For the exact key path,
+run `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py schema generate-orient-brief` instead of guessing. Cadence counters are
+nested: for example `context.skill_opt_status.sessions_since_skill_opt`, not
+`context.sessions_since_skill_opt`.
 
 Returns `{context, gitlog, carry_forward, global_cross_project, artefacts_matched,
 watch_signals, brief_markdown}`. `context` is the same dict `read` returns (`intent`,
@@ -295,8 +298,8 @@ Before proceeding to DECIDE, check if this namespace was last closed less than 4
 
 Use `context.last_close` from Step 1's `generate-orient-brief` output — do not run a
 second `read` for it (it rebuilds the same ~80KB context). Calculate hours elapsed. If elapsed time is less than the
-configured `session_cooldown_hours` (default: 4), read
-`~/.claude/skills/compass/scripts/prompts/orient-gates.md`'s Step 2f section and follow it — a
+configured `session_cooldown_hours` (default: 4), load the Step 2f section with
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-gates --section "Step 2f — Session hygiene"` and follow it — a
 **blocking** reason prompt, then `acknowledge-cooldown-violation`, which opens the session itself.
 
 If no violation (last_close is more than cooldown_hours ago, or never closed), skip silently.
@@ -309,8 +312,8 @@ Moved to **Step 3b**, item 1 (the scan and its prompt). `gitlog` is still fetche
 
 Check `intent_changed` from the read output. If `false`: skip silently.
 
-If `true`, read `~/.claude/skills/compass/scripts/prompts/orient-gates.md`'s Step 2h section and follow
-it — a gating Y/N drift prompt recorded with `set-intent` now, at ORIENT; never re-prompted at close.
+If `true`, load the Step 2h section with
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-gates --section "Step 2h"` and follow it — a gating Y/N drift prompt recorded with `set-intent` now, at ORIENT; never re-prompted at close.
 
 ### Step 3 — DECIDE
 
@@ -419,7 +422,7 @@ space-separated tokens, each `<N><value>` (or `<N>:<value>` for a longer value):
 |---|---|---|
 | 4 STRETCH GOAL | Ask: *"One sentence: what's the open design question or hypothesis worth tackling?"* Add as an additional confirmed goal. | Proceed silently. |
 | 5 GOAL TYPES | Parse the string into a `goal_types` array (e.g. `"EXE"` → `["exploit", "explore", "exploit"]`). Store alongside goals; passed in the close payload as `"goal_types": [...]`. | Default-fill `goal_types` as all `"exploit"` for the confirmed goal count (see the item-5 note above). |
-| 6 CONTRACTS | Read `~/.claude/skills/compass/scripts/prompts/contract-and-architecture-checks.md`'s "Verification contract offer" section and follow its Y/S per-goal criteria capture (`log-goal-contract` per goal). | `goal_contracts` stays empty for this session. |
+| 6 CONTRACTS | Load the section with `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt contract-and-architecture-checks --section "Verification contract offer (P55)"` and follow its Y/S per-goal criteria capture (`log-goal-contract` per goal). | `goal_contracts` stays empty for this session. |
 | 7 HYPOTHESES | Proceed into Step 4.5's existing per-assumption free-text loop (unchanged — this is the part that needs new user-supplied content, so it stays interactive after Step 4's lock). | Skip Step 4.5 entirely; no hypotheses logged. |
 
 **Rules:**
