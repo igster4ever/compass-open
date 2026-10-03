@@ -34,7 +34,13 @@ Run when `open_session = false`.
 ### Step 0 — Pre-mediation impulse capture (P74 Phase 1)
 
 Before running OBSERVE — before any git signal, learning, or reality bullet is fetched —
-ask one optional question:
+capture what the user wants to do.
+
+**If the router passed `impulse="<text>"`**, use that text verbatim as `raw_impulse` and do
+not ask. The user typed it before anything was fetched, so it is already pre-mediation.
+
+**Otherwise** (no `impulse`, e.g. the invocation was only a namespace), ask one optional
+question:
 
 ```
 Before I check anything — what do you want to do right now, in one sentence? (or enter to skip)
@@ -50,6 +56,8 @@ user later in the same session, never use it to steer ORIENT's synthesis brief o
 goal proposal, and never skip asking just because the answer seems likely to match
 whatever OBSERVE will find anyway — the entire value of the capture depends on it being
 genuinely prior to mediation, every time, not just on sessions where drift seems likely.
+Only the router's `impulse` replaces the question. Never build one from conversation that
+came after the router (it may already reflect what compass showed).
 
 ### Step 1 — OBSERVE
 
