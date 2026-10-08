@@ -77,9 +77,15 @@ with a targeted one-liner, e.g.:
 ```bash
 /opt/homebrew/bin/python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
 ```
-and pull individual `context.*` fields (the cadence-due flags Step 2b onward check,
-`session_index` for `expand-session` lookups, etc.) the same way, one field at a time,
-rather than loading the full structure into context at once. For the exact key path,
+**Gate flags come from a separate small call, not from this output:**
+```bash
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py orient-flags <namespace>
+```
+It returns about 2KB: every `*_due` flag with its `*_status` block, the defer counts,
+`suggested_goal_count`, `last_close`, `intent_changed`, `goal_completion_trend`, and counts
+of stale bullets and pending validations. Steps 2b onward, 2f, 3 and 3f read their flags from
+it. Pull other `context.*` fields (`session_index` for `expand-session` lookups, etc.) from
+the persisted file one field at a time, rather than loading the full structure into context. For the exact key path,
 run `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py schema generate-orient-brief` instead of guessing. Cadence counters are
 nested: for example `context.skill_opt_status.sessions_since_skill_opt`, not
 `context.sessions_since_skill_opt`.
@@ -305,7 +311,7 @@ it covers the Confirmed/Disproven/Untested prompt per expired hypothesis.
 Before proceeding to DECIDE, check if this namespace was last closed less than 4 hours ago
 (or less than the configured cooldown, if customised):
 
-Use `context.last_close` from Step 1's `generate-orient-brief` output — do not run a
+Use `last_close` from Step 1's `orient-flags` output — do not run a
 second `read` for it (it rebuilds the same ~80KB context). Calculate hours elapsed. If elapsed time is less than the
 configured `session_cooldown_hours` (default: 4), load the Step 2f section with
 `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-gates --section "Step 2f — Session hygiene"` and follow it — a
