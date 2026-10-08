@@ -164,8 +164,8 @@ tactical backlog item as a goal candidate. Add the sections it does not render:
 ```
 
 The full section-by-section brief format and the P56 zone-grouping rule are in
-`~/.claude/skills/compass/scripts/prompts/orient-brief-format.md`. Read it only when you
-must render a section yourself: `brief_markdown` is missing, or Step 1's BM25 query
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-brief-format --section "Step 2 — ORIENT brief format (P56 zone-grouping included)"`.
+Load it only when you must render a section yourself: `brief_markdown` is missing, or Step 1's BM25 query
 changed the top-learnings ranking.
 
 **Conditional advisories:** check these fields from the current `read` output —
@@ -176,9 +176,9 @@ changed the top-learnings ranking.
 `quality_plateau.plateaued` with a pulled-forward cadence ·
 `quality_trend == "declining"` AND `quality_plateau.trend == "improving"` (P75 —
 takes priority over the plain declining message when both hold).
-If **any** hold, read `scripts/prompts/orient-brief-advisories.md` and append the
-matching block(s), in the order listed there. If **none** hold, skip entirely —
-don't load that file for a brief with nothing to add.
+If **any** hold, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-brief-advisories --section "ORIENT brief — conditional advisory blocks"`
+and append the matching block(s), in the order listed there. If **none** hold, skip entirely —
+don't load it for a brief with nothing to add.
 
 **Record surfacing (P32/P44):** immediately after presenting the brief above (and the
 global cross-project block, if shown), run silently:
@@ -226,8 +226,8 @@ to look):
 
 ### Step 2b.1 — Strategic Assumption Audit (P47)
 
-Check `assumption_audit_due` from read output. If `false`, skip entirely. If `true`, read
-`~/.claude/skills/compass/scripts/prompts/assumption-audit.md` and follow it — it covers
+Check `assumption_audit_due` from read output. If `false`, skip entirely. If `true`, load
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt assumption-audit --section "Step 2b.1 — Strategic Assumption Audit (P47)"` and follow it — it covers
 candidate selection, the P50/P59 advisory add-ons, the V/C/D/S response mapping, and the
 counter reset.
 
@@ -242,8 +242,8 @@ Moved to **Step 3f**, item 1. The flag is still read at Step 1 OBSERVE.
 Check `claude_review_due` from read output. If `false`, skip entirely. If `true`, check
 whether a `CLAUDE.md` exists for this namespace (`repo_path/CLAUDE.md`, or
 `~/.claude/skills/<namespace>/CLAUDE.md` if `repo_path` is unset) — if none, reset the
-counter (`record-claude-review <namespace>`) and skip silently. Otherwise read
-`~/.claude/skills/compass/scripts/prompts/claude-md-hygiene-review.md` and follow it.
+counter (`record-claude-review <namespace>`) and skip silently. Otherwise load
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt claude-md-hygiene-review --section "Step 2b.3b — Periodic CLAUDE.md hygiene review"` and follow it.
 
 ---
 
@@ -255,10 +255,10 @@ Moved to **Step 3f**, item 2. The flag is still read at Step 1 OBSERVE.
 
 ### Step 2b.4b — Periodic SKILL.md optimisation pass (P-SkillOpt)
 
-Check `skill_opt_due` from read output. If `false`, skip entirely. If `true`, read
-`~/.claude/skills/compass/scripts/prompts/skillopt-protocol.md` and follow it from its "Gate prompt (Step 2b.4b)"
-section — the P61c friction-gate prompt variants, then the Y (evidence collection + reflect pass) or
-n/later (defer, counter not reset) path.
+Check `skill_opt_due` from read output. If `false`, skip entirely. If `true`, load
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt skillopt-protocol --section "Gate prompt (Step 2b.4b)"` and follow it — the P61c friction-gate
+prompt variants. On Y, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt skillopt-protocol --section "Evidence collection + reflect pass (on Y)"`;
+n/later defers (counter not reset).
 
 ---
 
@@ -288,8 +288,9 @@ Moved to **Step 3f**, item 3. The flag is still read at Step 1 OBSERVE.
 ### Step 2c — Reality validation protocol (P0.1)
 
 Check `reality_stale_bullets` from the `read` output. If empty, skip to Step 2d's check
-below. If non-empty, read `~/.claude/skills/compass/scripts/prompts/reality-and-hypothesis-validation.md`
-and follow its Step 2c section — one `auto-verify-reality` call (filesystem/git evidence,
+below. If non-empty, load
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt reality-and-hypothesis-validation --section "Step 2c — Reality validation protocol (P0.1)"`
+and follow it — one `auto-verify-reality` call (filesystem/git evidence,
 stamped in Python) and the manual confirmation prompt for anything left in `manual`. **This is a gating
 step** — do not proceed to DECIDE until it resolves.
 
@@ -373,8 +374,8 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
    touches a domain with no results or only >90-day-old results, and at least 3 prior
    sessions exist.
 
-If **none** of 1–4 trigger, skip this step silently and render nothing. Otherwise read
-`~/.claude/skills/compass/scripts/prompts/pre-lock-advisory-batch.md` and follow it — the
+If **none** of 1–4 trigger, skip this step silently and render nothing. Otherwise load
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt pre-lock-advisory-batch --section "Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)"` and follow it — the
 one-screen render, override parsing, per-item routing and rules.
 
 ### Step 3f — Consolidated DECIDE-tail batch (v1 consolidation, 2026-09-01)
@@ -403,8 +404,10 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
 6. **`[CONTRACTS]`** — always present. Default: **no** (skip; `goal_contracts` stays empty).
 7. **`[HYPOTHESES]`** — always present. Default: **no**.
 
-If item 1, 2 or 3 renders, read `~/.claude/skills/compass/scripts/prompts/decide-tail-cadence-items.md`
-first — it has the `<escalation hint>` rule for lines 1/2, the routing for items 1–3 and
+If item 1, 2 or 3 renders, load
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt decide-tail-cadence-items --section "Rendering lines 1/2"` and
+`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt decide-tail-cadence-items --section "Routing items 1–3"`
+first — they hold the `<escalation hint>` rule for lines 1/2, the routing for items 1–3 and
 the escalation-after-lock note. Skip it when only items 4–7 render.
 
 Render:
@@ -505,8 +508,8 @@ required:
 The Y/n gate ("Log any to validate at close?") is now item 7 of Step 3f — this step
 only runs the free-text follow-up loop, and only if item 7's answer was **Y**:
 
-- **Y** (from Step 3f item 7) → read
-  `~/.claude/skills/compass/scripts/prompts/hypothesis-elicitation.md` and follow it — one
+- **Y** (from Step 3f item 7) → load
+  `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt hypothesis-elicitation --section "Step 4.5 — Pre-session hypothesis elicitation (P15)"` and follow it — one
   `log-learning` hypothesis per assumption, until the user says n.
 
 Confirm to the user:
