@@ -513,9 +513,11 @@ back to the parent router.
 
 **Prompt-count tally:** each time Steps 0–4.6 show the user an interactive screen, run
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py tally-prompt <namespace> open
+/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py tally-prompt <namespace> open <screen>
 ```
-An "interactive screen" is one round trip that waited for a response, not one script
-call or one bullet within a screen (Step 3f's batch counts as **one**, however many of
-its 7 items rendered). The script keeps the count across `open`, and `close` records it
-as `open_prompt_count` — don't keep or estimate the number yourself.
+`<screen>` is a short key (`gate`, `impulse`, `orient`, `goals`, `advisories`, `batch`,
+`research`): repeating a key never double counts, so tally once as each screen is
+rendered and don't worry about repeats. An "interactive screen" is one round trip that
+waited for a response, not one script call or one bullet within a screen (Step 3f's
+batch is **one**, however many items rendered). The script keeps the count across
+`open`, and `close` records it as `open_prompt_count` — don't estimate it yourself.
