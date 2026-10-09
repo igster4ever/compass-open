@@ -61,19 +61,14 @@ came after the router (it may already reflect what compass showed).
 
 ### Step 1 — OBSERVE
 
-Run the consolidated command — one script call instead of the seven separate
-`read`/`gitlog`/`carry-forward`/`read global`/`list-artefacts`/`watch-signals` calls
-this step used to make:
+Run the consolidated command (one call replaces the old seven):
 ```bash
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py generate-orient-brief <namespace>
 ```
 
-**This output is often large enough that the harness persists it to a file instead of
-inlining it (2026-09-02 session-review finding — a real session `Read` the entire
-43KB persisted file into context here, most of it the raw `context`/`recent_history`/
-`cycle_history` JSON already re-expressed by `brief_markdown` below). When that
-happens, do NOT `Read` the whole file.** Extract only what a given step actually needs
-with a targeted one-liner, e.g.:
+**The output is often large enough that the harness persists it to a file. When that
+happens, do NOT `Read` the whole file** (most of it is raw JSON that `brief_markdown`
+already re-expresses). Extract only what a step needs, e.g.:
 ```bash
 /opt/homebrew/bin/python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
 ```
@@ -81,29 +76,20 @@ with a targeted one-liner, e.g.:
 ```bash
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py orient-flags <namespace>
 ```
-It returns about 2KB: every `*_due` flag with its `*_status` block, the defer counts,
+About 2KB: every `*_due` flag with its `*_status` block, the defer counts,
 `suggested_goal_count`, `last_close`, `intent_changed`, `goal_completion_trend`, and counts
-of stale bullets and pending validations. Steps 2b onward, 2f, 3 and 3f read their flags from
-it. Pull other `context.*` fields (`session_index` for `expand-session` lookups, etc.) from
-the persisted file one field at a time, rather than loading the full structure into context. For the exact key path,
-run `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py schema generate-orient-brief` instead of guessing. Cadence counters are
-nested: for example `context.skill_opt_status.sessions_since_skill_opt`, not
-`context.sessions_since_skill_opt`.
+of stale bullets and pending validations. Steps 2b onward, 2f, 3 and 3f read their flags
+from it. Pull other `context.*` fields (e.g. `session_index`) from the persisted file one
+field at a time; for key paths run `compass.py schema generate-orient-brief` (cadence
+counters are nested: `context.skill_opt_status.sessions_since_skill_opt`).
 
 Returns `{context, gitlog, carry_forward, global_cross_project, artefacts_matched,
-watch_signals, brief_markdown}`. `context` is the same dict `read` returns (`intent`,
-`reality`, `top_learnings`, `planned_actions`, `session_index`, all cadence-due flags,
-etc.). `brief_markdown` is a pre-rendered markdown block covering the mechanical
-sections of Step 2's brief (reality completeness, zone-grouped top-learnings,
-cross-namespace signals, tactical backlog) — use it as the base and prepend the P48
-synthesis blockquote plus any judgement-driven sections (drift/gaps, advisories),
-which stay LLM-authored rather than templated.
-
-`global_cross_project` is already the ≤3 tag-overlap-matched entries from `global`
-(empty list if this namespace *is* `global`, or if there's no overlap — nothing further
-to fetch). `artefacts_matched` is already the ≤2 tag-matched artefacts. `watch_signals`
-is `null` when `config.watches` is empty, otherwise the same shape `watch-signals`
-returns — check `watch_signals.empty` before rendering that section.
+watch_signals, brief_markdown}`. `context` is what `read` returns. `brief_markdown` is the
+pre-rendered mechanical part of Step 2's brief (reality completeness, zone-grouped
+top-learnings, cross-namespace signals, tactical backlog): use it as the base and prepend
+the P48 synthesis blockquote plus the judgement-driven sections (drift/gaps, advisories).
+`global_cross_project` (≤3) and `artefacts_matched` (≤2) are already matched; `watch_signals`
+is `null` without `config.watches`, else check `watch_signals.empty` before rendering.
 
 Still fetch two things separately — both need per-session context this command can't
 supply:
@@ -433,28 +419,7 @@ If none of items 1–4 are triggered this session, the list only shows 5/6/7 —
 empty (5/6/7 are always present, matching the old always-offered behaviour of 3b.6/3b.8
 and the always-optional-but-always-asked 4.5 gate).
 
-**Parsing overrides:** a bare **Enter** accepts every default. Otherwise parse
-space-separated tokens, each `<N><value>` (or `<N>:<value>` for a longer value):
-`1n` / `1later` / `4Y` / `5:EEXX` / `6S` / `7Y`, in any combination.
-
-**Route each item's answer exactly as its original step did** (items 1–3: see
-`decide-tail-cadence-items.md`):
-
-| Item | On yes / non-default | On no / default-skip |
-|---|---|---|
-| 4 STRETCH GOAL | Ask: *"One sentence: what's the open design question or hypothesis worth tackling?"* Add as an additional confirmed goal. | Proceed silently. |
-| 5 GOAL TYPES | Parse the string into a `goal_types` array (e.g. `"EXE"` → `["exploit", "explore", "exploit"]`). Store alongside goals; passed in the close payload as `"goal_types": [...]`. | Default-fill `goal_types` as all `"exploit"` for the confirmed goal count (see the item-5 note above). |
-| 6 CONTRACTS | Load the section with `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt contract-and-architecture-checks --section "Verification contract offer (P55)"` and follow its Y/S per-goal criteria capture (`log-goal-contract` per goal). | `goal_contracts` stays empty for this session. |
-| 7 HYPOTHESES | Proceed into Step 4.5's existing per-assumption free-text loop (unchanged — this is the part that needs new user-supplied content, so it stays interactive after Step 4's lock). | Skip Step 4.5 entirely; no hypotheses logged. |
-
-**Rules:**
-- One rendered screen. One round of overrides. No follow-up screen for items 1–3, 6 —
-  their Y-path work (agent spawn, sub-skill invocation, contract capture) happens
-  immediately after parsing the response, same as it did inline in their original steps.
-- Item 4's stretch-goal free text and item 7's hypothesis free text are still separate
-  interactive follow-ups **after** this screen resolves — batching a yes/no gate does not
-  mean inventing content the user hasn't supplied yet.
-- Advisory items (4) never block; cadence items (1–3) never block; 5/6/7 never block.
+**Enter** accepts every default: items 1–3 run their yes-path (routing already loaded with the lines), item 4 no, item 5 all `E` (`goal_types` = `exploit` for the confirmed goal count), items 6 and 7 no (`goal_contracts` stays empty; Step 4.5 is skipped). Any other response → load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt decide-tail-cadence-items --section "Step 3f — Override parsing and routing (items 4–7)"` and follow it.
 
 ### Step 3c — Architecture constraint check (P_ARCH)
 
@@ -463,13 +428,9 @@ silently — do not even read the prompts file. If configured, read the same
 `contract-and-architecture-checks.md` file's Step 3c section — it covers the
 service/module-name detection and the pom.xml dependency-declaration check.
 
-### Step 3d — Pre-implementation research fork detection (P13) (moved)
+### Steps 3d, 3e (moved)
 
-Moved to **Step 3b**, item 3.
-
-### Step 3e — Domain novelty check (P21) (moved)
-
-Moved to **Step 3b**, item 4 (complements item 3: prior experience vs prior decisions).
+3d (research fork, P13) and 3e (domain novelty, P21) now live in **Step 3b**, items 3 and 4.
 
 ---
 
@@ -479,12 +440,8 @@ Once confirmed, open the session:
 ```bash
 /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py open <namespace> '<json_array_of_goals>' '<raw_impulse from Step 0, or omit the third arg entirely if it was skipped>'
 ```
-The third argument is `raw_impulse` captured at Step 0 (P74 Phase 1) — omit it if the
-user skipped that prompt. This call only stashes the value on a genuine first open; if
-`acknowledge-cooldown-violation` already opened the session this cycle (Step 2f), that
-call already carried `raw_impulse` and this one must not repeat it — `open`'s idempotent
-re-open branch ignores a fourth positional value regardless, so passing it again here is
-harmless but redundant, not double-counted.
+The third argument is `raw_impulse` from Step 0 (P74): omit it if skipped, or if
+`acknowledge-cooldown-violation` (Step 2f) already opened the session with it.
 
 Then populate the todo list with the confirmed goals, if this runtime has a
 TodoWrite-equivalent tool (use it). **Either way**, as each confirmed goal actually
