@@ -209,7 +209,7 @@ expired hypothesis).
 
 ### Step 2f — Session hygiene precondition check (P4.2)
 
-Take `last_close` from `orient-flags` (no second `read`: it rebuilds the ~80KB context) and
+Take `last_close` from `orient-flags` (no second `read`: it rebuilds the ~100KB context) and
 compute the hours elapsed. If under `session_cooldown_hours` (default 4), load
 `~/.claude/skills/compass/scripts/compass.sh prompt orient-gates --section "Step 2f — Session hygiene"`
 and follow it: a **blocking** reason prompt, then `acknowledge-cooldown-violation`, which opens
