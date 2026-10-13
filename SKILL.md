@@ -63,18 +63,18 @@ came after the router (it may already reflect what compass showed).
 
 Run the consolidated command (one call replaces the old seven):
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py generate-orient-brief <namespace>
+~/.claude/skills/compass/scripts/compass.sh generate-orient-brief <namespace>
 ```
 
 **The output is often large enough that the harness persists it to a file. When that
 happens, do NOT `Read` the whole file** (most of it is raw JSON that `brief_markdown`
 already re-expresses). Extract only what a step needs, e.g.:
 ```bash
-/opt/homebrew/bin/python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
+python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
 ```
 **Gate flags come from a separate small call, not from this output:**
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py orient-flags <namespace>
+~/.claude/skills/compass/scripts/compass.sh orient-flags <namespace>
 ```
 About 2KB: every `*_due` flag with its `*_status` block, the defer counts,
 `suggested_goal_count`, `last_close`, `intent_changed`, `goal_completion_trend`, and counts
@@ -99,12 +99,12 @@ supply:
   relevant to carry-forward, hypothesis validation, or prior decisions, then call
   `expand-session <id>` for those sessions only:
   ```bash
-  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py expand-session <namespace> <session-id>
+  ~/.claude/skills/compass/scripts/compass.sh expand-session <namespace> <session-id>
   ```
 - **BM25 goal-relevance query (R9):** if `session_index` contains planned actions for
   the most recent session, run:
   ```bash
-  /opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
+  ~/.claude/skills/compass/scripts/compass.sh query-learnings <namespace> \
     '{"query": "<last session planned actions joined>", "limit": 5}'
   ```
   Use the returned `results` as `top_learnings` in the orient brief instead of the
@@ -156,7 +156,7 @@ tactical backlog item as a goal candidate. Add the sections it does not render:
 ```
 
 The full section-by-section brief format and the P56 zone-grouping rule are in
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-brief-format --section "Step 2 — ORIENT brief format (P56 zone-grouping included)"`.
+`~/.claude/skills/compass/scripts/compass.sh prompt orient-brief-format --section "Step 2 — ORIENT brief format (P56 zone-grouping included)"`.
 Load it only when you must render a section yourself: `brief_markdown` is missing, or Step 1's BM25 query
 changed the top-learnings ranking.
 
@@ -168,14 +168,14 @@ changed the top-learnings ranking.
 `quality_plateau.plateaued` with a pulled-forward cadence ·
 `quality_trend == "declining"` AND `quality_plateau.trend == "improving"` (P75 —
 takes priority over the plain declining message when both hold).
-If **any** hold, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-brief-advisories --section "ORIENT brief — conditional advisory blocks"`
+If **any** hold, load `~/.claude/skills/compass/scripts/compass.sh prompt orient-brief-advisories --section "ORIENT brief — conditional advisory blocks"`
 and append the matching block(s), in the order listed there. If **none** hold, skip entirely —
 don't load it for a brief with nothing to add.
 
 **Record surfacing (P32/P44):** immediately after presenting the brief above (and the
 global cross-project block, if shown), run silently:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py surface-learnings <namespace>
+~/.claude/skills/compass/scripts/compass.sh surface-learnings <namespace>
 ```
 If the global cross-project block was shown, also run `surface-learnings global`. This
 is what bumps `times_surfaced`/`last_surfaced_at` for the learnings actually shown to the
@@ -219,7 +219,7 @@ to look):
 ### Step 2b.1 — Strategic Assumption Audit (P47)
 
 Check `assumption_audit_due` from read output. If `false`, skip entirely. If `true`, load
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt assumption-audit --section "Step 2b.1 — Strategic Assumption Audit (P47)"` and follow it — it covers
+`~/.claude/skills/compass/scripts/compass.sh prompt assumption-audit --section "Step 2b.1 — Strategic Assumption Audit (P47)"` and follow it — it covers
 candidate selection, the P50/P59 advisory add-ons, the V/C/D/S response mapping, and the
 counter reset.
 
@@ -235,7 +235,7 @@ Check `claude_review_due` from read output. If `false`, skip entirely. If `true`
 whether a `CLAUDE.md` exists for this namespace (`repo_path/CLAUDE.md`, or
 `~/.claude/skills/<namespace>/CLAUDE.md` if `repo_path` is unset) — if none, reset the
 counter (`record-claude-review <namespace>`) and skip silently. Otherwise load
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt claude-md-hygiene-review --section "Step 2b.3b — Periodic CLAUDE.md hygiene review"` and follow it.
+`~/.claude/skills/compass/scripts/compass.sh prompt claude-md-hygiene-review --section "Step 2b.3b — Periodic CLAUDE.md hygiene review"` and follow it.
 
 ---
 
@@ -248,8 +248,8 @@ Moved to **Step 3f**, item 2. The flag is still read at Step 1 OBSERVE.
 ### Step 2b.4b — Periodic SKILL.md optimisation pass (P-SkillOpt)
 
 Check `skill_opt_due` from read output. If `false`, skip entirely. If `true`, load
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt skillopt-protocol --section "Gate prompt (Step 2b.4b)"` and follow it — the P61c friction-gate
-prompt variants. On Y, load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt skillopt-protocol --section "Evidence collection + reflect pass (on Y)"`;
+`~/.claude/skills/compass/scripts/compass.sh prompt skillopt-protocol --section "Gate prompt (Step 2b.4b)"` and follow it — the P61c friction-gate
+prompt variants. On Y, load `~/.claude/skills/compass/scripts/compass.sh prompt skillopt-protocol --section "Evidence collection + reflect pass (on Y)"`;
 n/later defers (counter not reset).
 
 ---
@@ -281,7 +281,7 @@ Moved to **Step 3f**, item 3. The flag is still read at Step 1 OBSERVE.
 
 Check `reality_stale_bullets` from the `read` output. If empty, skip to Step 2d's check
 below. If non-empty, load
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt reality-and-hypothesis-validation --section "Step 2c — Reality validation protocol (P0.1)"`
+`~/.claude/skills/compass/scripts/compass.sh prompt reality-and-hypothesis-validation --section "Step 2c — Reality validation protocol (P0.1)"`
 and follow it — one `auto-verify-reality` call (filesystem/git evidence,
 stamped in Python) and the manual confirmation prompt for anything left in `manual`. **This is a gating
 step** — do not proceed to DECIDE until it resolves.
@@ -300,7 +300,7 @@ Before proceeding to DECIDE, check if this namespace was last closed less than 4
 Use `last_close` from Step 1's `orient-flags` output — do not run a
 second `read` for it (it rebuilds the same ~80KB context). Calculate hours elapsed. If elapsed time is less than the
 configured `session_cooldown_hours` (default: 4), load the Step 2f section with
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-gates --section "Step 2f — Session hygiene"` and follow it — a
+`~/.claude/skills/compass/scripts/compass.sh prompt orient-gates --section "Step 2f — Session hygiene"` and follow it — a
 **blocking** reason prompt, then `acknowledge-cooldown-violation`, which opens the session itself.
 
 If no violation (last_close is more than cooldown_hours ago, or never closed), skip silently.
@@ -314,7 +314,7 @@ Moved to **Step 3b**, item 1 (the scan and its prompt). `gitlog` is still fetche
 Check `intent_changed` from the read output. If `false`: skip silently.
 
 If `true`, load the Step 2h section with
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt orient-gates --section "Step 2h"` and follow it — a gating Y/N drift prompt recorded with `set-intent` now, at ORIENT; never re-prompted at close.
+`~/.claude/skills/compass/scripts/compass.sh prompt orient-gates --section "Step 2h"` and follow it — a gating Y/N drift prompt recorded with `set-intent` now, at ORIENT; never re-prompted at close.
 
 ### Step 3 — DECIDE
 
@@ -367,7 +367,7 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
    sessions exist.
 
 If **none** of 1–4 trigger, skip this step silently and render nothing. Otherwise load
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt pre-lock-advisory-batch --section "Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)"` and follow it — the
+`~/.claude/skills/compass/scripts/compass.sh prompt pre-lock-advisory-batch --section "Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)"` and follow it — the
 one-screen render, override parsing, per-item routing and rules.
 
 ### Step 3f — Consolidated DECIDE-tail batch (v1 consolidation, 2026-09-01)
@@ -397,8 +397,8 @@ Build one numbered list, one line per item, **omitting any line whose trigger is
 7. **`[HYPOTHESES]`** — always present. Default: **no**.
 
 If item 1, 2 or 3 renders, load
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt decide-tail-cadence-items --section "Rendering lines 1/2"` and
-`/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt decide-tail-cadence-items --section "Routing items 1–3"`
+`~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Rendering lines 1/2"` and
+`~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Routing items 1–3"`
 first — they hold the `<escalation hint>` rule for lines 1/2, the routing for items 1–3 and
 the escalation-after-lock note. Skip it when only items 4–7 render.
 
@@ -419,7 +419,7 @@ If none of items 1–4 are triggered this session, the list only shows 5/6/7 —
 empty (5/6/7 are always present, matching the old always-offered behaviour of 3b.6/3b.8
 and the always-optional-but-always-asked 4.5 gate).
 
-**Enter** accepts every default: items 1–3 run their yes-path (routing already loaded with the lines), item 4 no, item 5 all `E` (`goal_types` = `exploit` for the confirmed goal count), items 6 and 7 no (`goal_contracts` stays empty; Step 4.5 is skipped). Any other response → load `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt decide-tail-cadence-items --section "Step 3f — Override parsing and routing (items 4–7)"` and follow it.
+**Enter** accepts every default: items 1–3 run their yes-path (routing already loaded with the lines), item 4 no, item 5 all `E` (`goal_types` = `exploit` for the confirmed goal count), items 6 and 7 no (`goal_contracts` stays empty; Step 4.5 is skipped). Any other response → load `~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Step 3f — Override parsing and routing (items 4–7)"` and follow it.
 
 ### Step 3c — Architecture constraint check (P_ARCH)
 
@@ -438,7 +438,7 @@ service/module-name detection and the pom.xml dependency-declaration check.
 
 Once confirmed, open the session:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py open <namespace> '<json_array_of_goals>' '<raw_impulse from Step 0, or omit the third arg entirely if it was skipped>'
+~/.claude/skills/compass/scripts/compass.sh open <namespace> '<json_array_of_goals>' '<raw_impulse from Step 0, or omit the third arg entirely if it was skipped>'
 ```
 The third argument is `raw_impulse` from Step 0 (P74): omit it if skipped, or if
 `acknowledge-cooldown-violation` (Step 2f) already opened the session with it.
@@ -447,7 +447,7 @@ Then populate the todo list with the confirmed goals, if this runtime has a
 TodoWrite-equivalent tool (use it). **Either way**, as each confirmed goal actually
 completes during the session, also call:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py set-goal-status <namespace> '{"index": <0-based goal index>, "done": true}'
+~/.claude/skills/compass/scripts/compass.sh set-goal-status <namespace> '{"index": <0-based goal index>, "done": true}'
 ```
 This is what the Drift nudge check (and any future mid-session goal-progress check)
 reads when no host todo tool is available — `open` already initialises
@@ -472,7 +472,7 @@ The Y/n gate ("Log any to validate at close?") is now item 7 of Step 3f — this
 only runs the free-text follow-up loop, and only if item 7's answer was **Y**:
 
 - **Y** (from Step 3f item 7) → load
-  `/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py prompt hypothesis-elicitation --section "Step 4.5 — Pre-session hypothesis elicitation (P15)"` and follow it — one
+  `~/.claude/skills/compass/scripts/compass.sh prompt hypothesis-elicitation --section "Step 4.5 — Pre-session hypothesis elicitation (P15)"` and follow it — one
   `log-learning` hypothesis per assumption, until the user says n.
 
 Confirm to the user:
@@ -484,7 +484,7 @@ Confirm to the user:
 
 After the confirm, run silently:
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py query-learnings <namespace> \
+~/.claude/skills/compass/scripts/compass.sh query-learnings <namespace> \
   '{"query": "<all confirmed goals joined by space>", "limit": 3}'
 ```
 
@@ -513,7 +513,7 @@ back to the parent router.
 
 **Prompt-count tally:** each time Steps 0–4.6 show the user an interactive screen, run
 ```bash
-/opt/homebrew/bin/python3 ~/.claude/skills/compass/scripts/compass.py tally-prompt <namespace> open <screen>
+~/.claude/skills/compass/scripts/compass.sh tally-prompt <namespace> open <screen>
 ```
 `<screen>` is a short key (`gate`, `impulse`, `orient`, `goals`, `advisories`, `batch`,
 `research`): repeating a key never double counts, so tally once as each screen is
