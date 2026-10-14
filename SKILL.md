@@ -373,11 +373,12 @@ One pass only; never re-run mid-session.
 Once Step 4.5/4.6 confirms and the todo list is set, this sub-skill is done and the
 conversation continues into the session's work; there is nothing to hand back to the router.
 
-**Prompt-count tally:** each time Steps 0–4.6 show an interactive screen, run
+**Prompt-count tally:** note each interactive screen Steps 0–4.6 show and, once the todo list is
+set, tally them all in one call:
 ```bash
-~/.claude/skills/compass/scripts/compass.sh tally-prompt <namespace> open <screen>
+~/.claude/skills/compass/scripts/compass.sh tally-prompt <namespace> open <screen>[,<screen>...]
 ```
-`<screen>` is a short key (`gate`, `impulse`, `orient`, `goals`, `advisories`, `batch`,
+Each `<screen>` is a short key (`gate`, `impulse`, `orient`, `goals`, `advisories`, `batch`,
 `research`); repeating a key never double counts. A screen is one round trip that waited for a
 response, not one script call or bullet (Step 3f's batch is **one**). `close` records the count
 as `open_prompt_count`; don't estimate it.
