@@ -66,12 +66,14 @@ advisories). `global_cross_project` (≤3) and `artefacts_matched` (≤2) are al
 ```bash
 ~/.claude/skills/compass/scripts/compass.sh orient-flags <namespace>
 ```
-It carries every `*_due` flag with its `*_status`, the defer counts, `suggested_goal_count`,
+It carries every `*_due` flag, a `due` list, the `*_status` block of each due gate only, the defer counts, `suggested_goal_count`,
 `last_close`, `intent_changed`, `goal_completion_trend`, `stale_bullet_count`,
 `pending_validations` and `assumption_audit_candidate_count`. Steps 2b onward, 2f, 3 and 3f read
 their flags from it. A due audit with no candidates arrives as `assumption_audit_due: false`
 (`open` resets its counter). For any other `context.*` field, pull it from the persisted file
 one at a time; key paths: `compass.py schema generate-orient-brief`.
+`compass.sh brief <namespace> [--with-flags]` prints `brief_markdown`, a reality summary, explicit
+empty carry-forward/backlog lines and `code_context.md` as plain text in one call (read-only).
 
 Still fetch two things separately — both need per-session context this command can't supply:
 
