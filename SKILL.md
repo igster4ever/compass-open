@@ -263,11 +263,17 @@ Run after Step 3 is confirmed, before Step 3f. Build one numbered list, one line
 
 If none trigger, skip silently and render nothing. Otherwise load
 `~/.claude/skills/compass/scripts/compass.sh prompt pre-lock-advisory-batch --section "Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)"`
-and follow it (the one-screen render, override parsing, routing and rules).
+and follow it for the parsing, routing and rules.
+
+**One screen with Step 3f (default):** do not show 3b alone. Render its lines as `b1`–`b4` at the top
+of Step 3f's screen, under a `Before locking:` header, and take one response for both (override
+tokens `b2Y`, `3n`, `5:EEXX`). Tally one `batch` screen. If a `b2`/`b4` yes changes the goal list, run
+its follow-up after the response and re-ask only the `[GOAL TYPES]` line. Show 3b on its own screen
+only when the user asks for it.
 
 ### Step 3f — Consolidated DECIDE-tail batch (v1 consolidation, 2026-09-01)
 
-Run after Step 3b, before Step 3c. Build one numbered list, one line per item, **omitting any
+Run after Step 3b (its lines share this screen), before Step 3c. Build one numbered list, one line per item, **omitting any
 line whose trigger is false** (a line's number is stable across the session):
 
 1. **`[CODE REVIEW]`** — only if `code_review_due`. Cite `code_review_status.sessions_since_review`/
