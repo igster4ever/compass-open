@@ -276,7 +276,8 @@ line whose trigger is false** (a line's number is stable across the session):
 2. **`[RESEARCH]`** — only if `research_due`. Cite `research_status.sessions_since_research`/
    `interval_sessions` (or the pull-forward basis) and `research_defer_count`. Default: **yes**.
 3. **`[DREAM PASS]`** — only if `dream_due`. Cite `dream_status.sessions_since_dream`/
-   `interval_sessions`. Default: **yes**.
+   `interval_sessions` and its `corpus_size`, `cluster_count_estimate` and `weak_count_estimate` (all in
+   `orient-flags`; the line needs no load). Default: **yes**.
 4. **`[STRETCH GOAL]`** — only if all confirmed goals are execution tasks with none
    exploratory/design, OR the last 3 `goal_completion_trend` values are all `100.0`. Name the
    trigger. Default: **no**.
@@ -296,7 +297,7 @@ Render:
 ```
 1. [CODE REVIEW] due (<sessions_since_review>/<interval_sessions> sessions, deferred <N>×) → run? (default: yes)<escalation hint>
 2. [RESEARCH] due (<sessions_since_research>/<interval_sessions> sessions, deferred <N>×) → scope Q&A? (default: yes)<escalation hint>
-3. [DREAM PASS] due (<sessions_since_dream>/<interval_sessions> sessions) → run? (default: yes)
+3. [DREAM PASS] due (<sessions_since_dream>/<interval_sessions> sessions; <corpus_size> learnings, ~<cluster_count_estimate> near-dup, ~<weak_count_estimate> weak) → run? (default: yes)
 4. [STRETCH GOAL] <trigger: all-execution-tasks | 3× 100% completion> → add one? (default: no)
 5. [GOAL TYPES] tag each goal E/X, e.g. "EEXEE" for 5 goals (default: all E)
 6. [CONTRACTS] pre-specify success criteria for any goal? (default: no)
