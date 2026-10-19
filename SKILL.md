@@ -387,7 +387,10 @@ set, tally them all in one call:
 ```bash
 ~/.claude/skills/compass/scripts/compass.sh tally-prompt <namespace> open <screen>[,<screen>...]
 ```
-Each `<screen>` is a short key (`gate`, `impulse`, `orient`, `goals`, `advisories`, `batch`,
-`research`); repeating a key never double counts. A screen is one round trip that waited for a
-response, not one script call or bullet (Step 3f's batch is **one**). `close` records the count
-as `open_prompt_count`; don't estimate it.
+Each `<screen>` is a short key: `gate`, `impulse` (only if Step 0 asked; a router-supplied
+impulse is no screen), `orient`, `skill` (2b), `audit` (2b.1), `hygiene` (2b.3b), `skillopt`
+(2b.4b), `hypothesis` (2d, 4.5), `cooldown` (2f), `drift` (2h), `goals`, `advisories` (3b), `batch`
+(3f, only if rendered), `research`, `arch` (3c). The script refuses any other key, and
+`auto-verify-reality` tallies `stale` (2c) itself. Repeating a key never double counts. A screen
+is one round trip that waited for a response, not one script call or bullet (Step 3f's batch is
+**one**). `close` records the count as `open_prompt_count`; don't estimate it.
