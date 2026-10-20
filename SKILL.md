@@ -70,7 +70,8 @@ It carries every `*_due` flag, a `due` list, the `*_status` block of each due ga
 `last_close`, `intent_changed`, `goal_completion_trend`, `stale_bullet_count`,
 `pending_validations` and `assumption_audit_candidate_count`. Steps 2b onward, 2f, 3 and 3f read
 their flags from it. A due audit with no candidates arrives as `assumption_audit_due: false`
-(`open` resets its counter). For any other `context.*` field, pull it from the persisted file
+(`open` resets its counter). `due` can list `corpus_summary`; it is a close-time gate
+(compass-close Step 6), so open takes no action on it. For any other `context.*` field, pull it from the persisted file
 one at a time; key paths: `compass.py schema generate-orient-brief`.
 `compass.sh brief <namespace> [--with-flags]` prints `brief_markdown`, a reality summary, explicit
 empty carry-forward/backlog lines and `code_context.md` as plain text in one call (read-only).
@@ -269,7 +270,8 @@ and follow it for the parsing, routing and rules.
 of Step 3f's screen, under a `Before locking:` header, and take one response for both (override
 tokens `b2Y`, `3n`, `5:EEXX`). Tally one `batch` screen. If a `b2`/`b4` yes changes the goal list, run
 its follow-up after the response and re-ask only the `[GOAL TYPES]` line. Show 3b on its own screen
-only when the user asks for it.
+only when the user asks for it. When Step 3b renders no lines, put Step 3's goal list on this
+screen too and take one response for goals and overrides; tally `goals` and `batch`.
 
 ### Step 3f — Consolidated DECIDE-tail batch (v1 consolidation, 2026-09-01)
 
