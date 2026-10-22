@@ -46,46 +46,35 @@ genuinely prior to mediation.
 
 ### Step 1 — OBSERVE
 
+One read-only call returns everything OBSERVE needs, as plain text:
 ```bash
-~/.claude/skills/compass/scripts/compass.sh generate-orient-brief <namespace>
+~/.claude/skills/compass/scripts/compass.sh brief <namespace> --with-flags
 ```
-Returns `{context, gitlog, carry_forward, global_cross_project, artefacts_matched,
-watch_signals, brief_markdown}`; `context` is what `read` returns. The output is often large
-enough that the harness persists it to a file. **Do NOT `Read` the whole file** (mostly raw JSON
-that `brief_markdown` re-expresses); print only what a step needs:
-```bash
-python3 -c "import json; d=json.load(open('<persisted-file>')); print(d['brief_markdown'])"
-```
-`brief_markdown` is the pre-rendered mechanical part of Step 2's brief (reality completeness,
-zone-grouped top-learnings, cross-namespace signals, tactical backlog): use it as the base and
-prepend the P48 synthesis blockquote plus the judgement-driven sections (drift/gaps,
-advisories). `global_cross_project` (≤3) and `artefacts_matched` (≤2) are already matched;
-`watch_signals` is `null` without `config.watches`, else check `watch_signals.empty`.
+In order: `brief_markdown` (header, intent, reality completeness, signals since last session,
+zone-grouped top learnings, cross-project/cross-namespace signals, carry-forward, tactical
+backlog, artefacts), a reality summary, explicit "none" lines for an empty carry-forward or
+backlog, **Recent sessions** (S-1 to S-5), the **R9 goal-relevance block**, an **Advisory
+inputs** JSON line, `code_context.md` when present, and the **Gate flags** JSON line.
+`brief_markdown` is the mechanical part of Step 2's brief: use it as the base and prepend the
+P48 blockquote plus the judgement-driven sections (drift/gaps, advisories).
 
-**Gate flags come from a separate ~2KB call, not from this output:**
-```bash
-~/.claude/skills/compass/scripts/compass.sh orient-flags <namespace>
-```
-It carries every `*_due` flag, a `due` list, the `*_status` block of each due gate only, the defer counts, `suggested_goal_count`,
-`last_close`, `intent_changed`, `goal_completion_trend`, `stale_bullet_count`,
-`pending_validations` and `assumption_audit_candidate_count`. Steps 2b onward, 2f, 3 and 3f read
-their flags from it. A due audit with no candidates arrives as `assumption_audit_due: false`
-(`open` resets its counter). `due` can list `corpus_summary`; it is a close-time gate
-(compass-close Step 6), so open takes no action on it. For any other `context.*` field, pull it from the persisted file
-one at a time; key paths: `compass.py schema generate-orient-brief`.
-`compass.sh brief <namespace> [--with-flags]` prints `brief_markdown`, a reality summary, explicit
-empty carry-forward/backlog lines and `code_context.md` as plain text in one call (read-only).
+- **Gate flags** (`orient-flags`): every `*_due` flag, a `due` list, the `*_status` block of
+  each due gate only, the defer counts, `suggested_goal_count`, `last_close`, `intent_changed`,
+  `goal_completion_trend`, `stale_bullet_count`, `pending_validations` and
+  `assumption_audit_candidate_count`. Steps 2b onward, 2f, 3 and 3f read their flags from it.
+  A due audit with no candidates arrives as `assumption_audit_due: false`. `due` can list
+  `corpus_summary`, a close-time gate (compass-close Step 6): open takes no action on it.
+- **R9 block:** ranked by S-1's planned goals (BM25 + tag expansion). When it lists learnings,
+  render them as the brief's top learnings instead of the weight-ranked ones; when it says
+  "fewer than 2 matches" or "no planned goals", keep the top learnings as they are.
+- **Recent sessions:** scan for sessions relevant to carry-forward, hypothesis validation or
+  prior decisions, then `compass.sh expand-session <namespace> <session-id>` for those only.
+- **Advisory inputs:** the fields Step 2's conditional advisories, goal hit-rate and external
+  research signals read.
 
-Still fetch two things separately — both need per-session context this command can't supply:
-
-- **`session_index`** (in `context`): the last 20 sessions, one line each (P28). Scan it for
-  sessions relevant to carry-forward, hypothesis validation or prior decisions, then
-  `compass.sh expand-session <namespace> <session-id>` for those only.
-- **BM25 goal-relevance query (R9):** if `session_index[0].planned_actions` (S-1 only) is
-  non-empty, run `compass.sh query-learnings <namespace> '{"query": "<those planned actions
-  joined>", "limit": 5}'` and use its `results` as `top_learnings` (re-render that
-  section of the brief if the ranking changes). Fall back to `context.top_learnings` if it
-  returns fewer than 2 results; skip if the list is empty.
+Only for a `context.*` field none of these carry, run `compass.sh generate-orient-brief
+<namespace>` (large; the harness persists it to a file, so print single keys from it, never
+`Read` it whole; key paths: `compass.py schema generate-orient-brief`).
 
 ### Step 2 — ORIENT
 
@@ -126,11 +115,10 @@ the sections it does not render:
 <session_complexity.current> compass calls (avg: <session_complexity.avg_last_5> over last 5 sessions)
 ```
 
-Only when `brief_markdown` is missing, or Step 1's BM25 query changed the top-learnings ranking,
-load the full format with
+Only when `brief_markdown` is missing, load the full format with
 `~/.claude/skills/compass/scripts/compass.sh prompt orient-brief-format --section "Step 2 — ORIENT brief format (P56 zone-grouping included)"`.
 
-**Conditional advisories:** check these fields in the brief's context — `session_complexity.elevated` ·
+**Conditional advisories:** check these fields in Step 1's Advisory inputs line — `session_complexity.elevated` ·
 `goal_stats.total_goals > 0 AND goal_stats.hit_rate < 70` · `reality_completeness.regression` ·
 `exploration_ratio.low` · `reality_structure_warnings` non-empty · `outcome_rate < 0.3` ·
 `contract_coverage < 0.4` · `quality_trend == "declining"` · `quality_plateau.plateaued` with a
@@ -192,7 +180,7 @@ n/later defers (counter not reset).
 
 ### Step 2b.5 — Code context (cold-start orientation)
 
-Run `cat ~/.claude/loop/<namespace>/code_context.md 2>/dev/null`. If it is non-empty, show it
+Step 1's brief already includes `code_context.md` when it is non-empty. Show it
 as-is (no summarising) under `📁 Code context (last session):`; otherwise skip silently. Read-only,
 no confirmation; continue to Step 2c.
 
