@@ -320,8 +320,10 @@ detection and the pom.xml dependency-declaration check).
 
 Once confirmed, open the session:
 ```bash
-~/.claude/skills/compass/scripts/compass.sh open <namespace> '<json_array_of_goals>' '<raw_impulse from Step 0>'
+~/.claude/skills/compass/scripts/compass.sh open <namespace> '{"goals": [...], "goal_types": ["E", "X", ...]}' '<raw_impulse from Step 0>'
 ```
+`goal_types` is Step 3f item 5's tags (one `E`/`X` per goal); `open` stores them so close records
+them even after a context compaction. A plain JSON array of goals still works (no types stored).
 Omit the third argument if `raw_impulse` was skipped, or if `acknowledge-cooldown-violation`
 (Step 2f) already opened the session with it. The response's `assumption_audit_auto_reset: true`
 needs no action (a due audit with nothing to audit was reset).
