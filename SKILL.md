@@ -81,11 +81,11 @@ Still fetch two things separately — both need per-session context this command
 - **`session_index`** (in `context`): the last 20 sessions, one line each (P28). Scan it for
   sessions relevant to carry-forward, hypothesis validation or prior decisions, then
   `compass.sh expand-session <namespace> <session-id>` for those only.
-- **BM25 goal-relevance query (R9):** if `session_index` has planned actions for the most
-  recent session, run `compass.sh query-learnings <namespace> '{"query": "<last session planned
-  actions joined>", "limit": 5}'` and use its `results` as `top_learnings` (re-render that
+- **BM25 goal-relevance query (R9):** if `session_index[0].planned_actions` (S-1 only) is
+  non-empty, run `compass.sh query-learnings <namespace> '{"query": "<those planned actions
+  joined>", "limit": 5}'` and use its `results` as `top_learnings` (re-render that
   section of the brief if the ranking changes). Fall back to `context.top_learnings` if it
-  returns fewer than 2 results; skip if no prior planned actions exist.
+  returns fewer than 2 results; skip if the list is empty.
 
 ### Step 2 — ORIENT
 
