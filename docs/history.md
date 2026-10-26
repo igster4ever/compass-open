@@ -69,3 +69,23 @@ advisory batch (v2 consolidation, 2026-09-16) — nothing fires at this point an
 approach; P21/item-4 checks for *absence of prior experience* in a domain — complementary,
 not redundant, which is why both can appear as separate lines in the same batch screen.
 
+
+## 2026-10-26 — Phase 2 provenance strip (agentskills alignment plan)
+
+SKILL.md went from 23,259 to 19,973 bytes (plan G1: ≤ 20KB). Removed, with no step, number,
+default or order change:
+- Heading and label tags: (P74 Phase 1), (P48), (P56), (P11), (P0.2), (P24), (P75), (P32/P44),
+  (P47), (P-SkillOpt), (P61c), (P0.1), (P1.1), (P4.2), (P1.2), (P-DC2), (P_ARCH), (P67), (P15),
+  (P43b), (v1 consolidation, 2026-09-01), (v2 consolidation, 2026-09-16).
+- Header: "extracted from it 2026-08-29; see `docs/compass-open-extraction-sop.md`".
+- Step 2b "Moved steps" note: 2b.3/2b.4/2b.6 became Step 3f items 1–3; 2g became Step 3b item 1;
+  3d and 3e became Step 3b items 3 and 4.
+- Step 2b checklist date (2026-09-24) and Step 4's "a real session found `ToolSearch` returning
+  nothing for TodoWrite, 2026-09-02".
+- Step 3f item 5 rationale: accepting the default records every goal as exploit, so
+  exploration-ratio tracking counts the session as 100% exploit instead of excluding it.
+- Step 2 surfacing rationale: `read` is a pure query and does not bump `times_surfaced`
+  (`docs/cmd-read-purity-design.md`).
+The full script path is now written once (`compass.sh` = `~/.claude/skills/compass/scripts/compass.sh`).
+`--section` load strings keep their tags (they must match the prompt-file headings), and the
+Durable guidance block is unchanged (edited only in SkillOpt reviews).
