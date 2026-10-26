@@ -252,7 +252,8 @@ Run after Step 3 is confirmed, before Step 3f. Build one numbered list, one line
 
 If none trigger, skip silently and render nothing. Otherwise load
 `~/.claude/skills/compass/scripts/compass.sh prompt pre-lock-advisory-batch --section "Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)"`
-and follow it for the parsing, routing and rules.
+and follow it for the parsing, routing and rules. It computes `b1` and `b3` follow-ups before the
+screen and shows small ones (≤ 3) inline, so Enter answers them.
 
 **One screen with Step 3f (default):** do not show 3b alone. Render its lines as `b1`–`b4` at the top
 of Step 3f's screen, under a `Before locking:` header, and take one response for both (override
