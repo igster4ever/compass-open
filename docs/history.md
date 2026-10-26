@@ -89,3 +89,8 @@ default or order change:
 The full script path is now written once (`compass.sh` = `~/.claude/skills/compass/scripts/compass.sh`).
 `--section` load strings keep their tags (they must match the prompt-file headings), and the
 Durable guidance block is unchanged (edited only in SkillOpt reviews).
+
+**Correction (same day, after code review):** the strip first replaced the full script path with
+a bare `compass.sh` shorthand, which is not on PATH. Full paths are restored and more text was
+reworded to stay ≤ 20KB. `scripts/tests/test_subskill_protocol.py` in `compass` now guards the
+full path, every `--section` load, the step headings and the size budget.

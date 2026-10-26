@@ -2,8 +2,6 @@
 
 OODA-open sub-skill for `/compass`, invoked by the router when `open_session = false`. Owns
 Step 0 (impulse capture) through Step 4.6 (goal-conditioned retrieval). **Input:** `namespace`.
-Below, `compass.sh` means `~/.claude/skills/compass/scripts/compass.sh`.
-
 <!-- SLOW_UPDATE_START -->
 ## Durable guidance — distilled from loop history
 
@@ -32,11 +30,10 @@ Capture what the user wants to do **before** OBSERVE fetches anything.
   ```
   Before I check anything — what do you want to do right now, in one sentence? (or enter to skip)
   ```
-  Capture the answer verbatim (`""` if skipped). Never build one from conversation that came
-  after the router (it may already reflect what compass showed).
+  Capture the answer verbatim (`""` if skipped). Never build one from conversation after the
+  router.
 
-Hold `raw_impulse`: it goes to `open` at Step 4, or into the `acknowledge-cooldown-violation`
-payload at Step 2f if that path fires instead.
+Hold `raw_impulse` for `open` (Step 4) or `acknowledge-cooldown-violation` (Step 2f).
 
 **Rule:** this is instrumentation, not a decision point. Do not interpret, tag or reconcile
 it; never surface it again or use it to steer ORIENT or DECIDE; and ask every time, even when the
@@ -46,7 +43,7 @@ answer seems predictable.
 
 One read-only call returns everything OBSERVE needs, as plain text:
 ```bash
-compass.sh brief <namespace> --with-flags
+~/.claude/skills/compass/scripts/compass.sh brief <namespace> --with-flags
 ```
 In order: `brief_markdown` (header, intent, reality completeness, signals, top learnings,
 cross-namespace signals, carry-forward, tactical backlog, artefacts), a reality summary,
@@ -54,21 +51,18 @@ cross-namespace signals, carry-forward, tactical backlog, artefacts), a reality 
 line, `code_context.md` when present, and the **Gate flags** JSON line.
 `brief_markdown` is the base of Step 2's brief.
 
-- **Gate flags** (`orient-flags`): every `*_due` flag, a `due` list, the `*_status` block of
-  each due gate only, the defer counts, `suggested_goal_count`, `last_close`, `intent_changed`,
-  `goal_completion_trend`, `stale_bullet_count`, `pending_validations` and
-  `assumption_audit_candidate_count`. Steps 2b onward, 2f, 3 and 3f read their flags from it.
+- **Gate flags** (`orient-flags`): every `*_due` flag, the `*_status` block of each due gate,
+  defer counts and the other ORIENT inputs. Steps 2b onward, 2f, 3 and 3f read their flags here.
   `due` can list `corpus_summary`, a close-time gate: open takes no action on it.
 - **R9 block:** ranked by S-1's planned goals. When it lists learnings,
   render them as the brief's top learnings instead of the weight-ranked ones; when it says
   "fewer than 2 matches" or "no planned goals", keep the top learnings as they are.
-- **Recent sessions:** scan for sessions relevant to carry-forward, hypothesis validation or
-  prior decisions, then `compass.sh expand-session <namespace> <session-id>` for those only.
+- **Recent sessions:** for those relevant to carry-forward, hypotheses or prior decisions, run `~/.claude/skills/compass/scripts/compass.sh expand-session <namespace> <session-id>` for those only.
 - **Advisory inputs:** the fields Step 2's conditional advisories, goal hit-rate and external
   research signals read.
 
-Only for a `context.*` field none of these carry, run `compass.sh generate-orient-brief
-<namespace>` (large: print single keys from it, never `Read` it whole; key paths: `compass.sh
+Only for a `context.*` field none of these carry, run `~/.claude/skills/compass/scripts/compass.sh generate-orient-brief
+<namespace>` (large: print single keys from it, never `Read` it whole; key paths: `~/.claude/skills/compass/scripts/compass.sh
 schema generate-orient-brief`).
 
 ### Step 2 — ORIENT
@@ -108,7 +102,7 @@ backlog item flagged as a goal candidate, plus the sections it does not render:
 ```
 
 Only when `brief_markdown` is missing, load the full format with
-`compass.sh prompt orient-brief-format --section "Step 2 — ORIENT brief format (P56 zone-grouping included)"`.
+`~/.claude/skills/compass/scripts/compass.sh prompt orient-brief-format --section "Step 2 — ORIENT brief format (P56 zone-grouping included)"`.
 
 **Conditional advisories:** check these fields in Step 1's Advisory inputs line — `session_complexity.elevated` ·
 `goal_stats.total_goals > 0 AND goal_stats.hit_rate < 70` · `reality_completeness.regression` ·
@@ -116,19 +110,18 @@ Only when `brief_markdown` is missing, load the full format with
 `contract_coverage < 0.4` · `quality_trend == "declining"` · `quality_plateau.plateaued` with a
 pulled-forward cadence · `quality_trend == "declining"` AND `quality_plateau.trend ==
 "improving"` (takes priority over the plain declining message). If **any** hold, load
-`compass.sh prompt orient-brief-advisories --section "ORIENT brief — conditional advisory blocks"`
+`~/.claude/skills/compass/scripts/compass.sh prompt orient-brief-advisories --section "ORIENT brief — conditional advisory blocks"`
 and append the matching block(s) in the order listed there. If **none** hold, do not load it.
 
-**Record surfacing:** right after presenting the brief, run silently `compass.sh
+**Record surfacing:** right after presenting the brief, run silently `~/.claude/skills/compass/scripts/compass.sh
 surface-learnings <namespace>` (and `surface-learnings global` if the global cross-project block
 was shown). It bumps `times_surfaced` for the learnings shown. Call it from no other step.
 
 ### Step 2b — Skill opportunity detection
 
-After the brief, run the **Skill opportunity detection** pass (the router's
-`## Skill opportunity detection` section; only its trigger point lives here). If signals exist,
-surface the `💡 Tooling opportunities` block as a standalone prompt, **separate from the
-brief**, and wait for the response (Y / S / D) before Step 2b.1. No signals: continue silently.
+After the brief, run the router's **Skill opportunity detection** pass. If signals exist, show
+the `💡 Tooling opportunities` block as its own prompt, **separate from the brief**, and wait for
+Y / S / D before Step 2b.1. No signals: continue silently.
 
 **Cadence-gate convention (2b.1, 2b.3b, 2b.4b):** each checks a `*_due` flag (from
 `orient-flags`). `false` → skip entirely, no prompt. `true` → surface once as part of ORIENT,
@@ -144,7 +137,7 @@ the same rule but fire at Step 3f, not here.
 
 If `assumption_audit_due` is `false`, skip entirely (it is also `false` when there is nothing to
 audit). If `true`, load
-`compass.sh prompt assumption-audit --section "Step 2b.1 — Strategic Assumption Audit (P47)"`
+`~/.claude/skills/compass/scripts/compass.sh prompt assumption-audit --section "Step 2b.1 — Strategic Assumption Audit (P47)"`
 and follow it.
 
 ### Step 2b.3b — Periodic CLAUDE.md hygiene review
@@ -152,15 +145,15 @@ and follow it.
 If `claude_review_due` is `false`, skip entirely. If `true` and the namespace has no `CLAUDE.md`
 (`repo_path/CLAUDE.md`, or `~/.claude/skills/<namespace>/CLAUDE.md` when `repo_path` is unset),
 run `record-claude-review <namespace>` and skip silently. Otherwise load
-`compass.sh prompt claude-md-hygiene-review --section "Step 2b.3b — Periodic CLAUDE.md hygiene review"`
+`~/.claude/skills/compass/scripts/compass.sh prompt claude-md-hygiene-review --section "Step 2b.3b — Periodic CLAUDE.md hygiene review"`
 and follow it.
 
 ### Step 2b.4b — Periodic SKILL.md optimisation pass
 
 If `skill_opt_due` is `false`, skip entirely. If `true`, load
-`compass.sh prompt skillopt-protocol --section "Gate prompt (Step 2b.4b)"`
+`~/.claude/skills/compass/scripts/compass.sh prompt skillopt-protocol --section "Gate prompt (Step 2b.4b)"`
 On Y, load
-`compass.sh prompt skillopt-protocol --section "Evidence collection + reflect pass (on Y)"`;
+`~/.claude/skills/compass/scripts/compass.sh prompt skillopt-protocol --section "Evidence collection + reflect pass (on Y)"`;
 n/later defers (counter not reset).
 
 ### Step 2b.5 — Code context (cold-start orientation)
@@ -172,10 +165,9 @@ confirmation.
 ### Step 2c — Reality validation protocol
 
 If `stale_bullet_count` is 0, skip to Step 2d. Otherwise load
-`compass.sh prompt reality-and-hypothesis-validation --section "Step 2c — Reality validation protocol (P0.1)"`
-and follow it: one `auto-verify-reality` call (filesystem/git evidence, stamped in Python), then
-a manual confirmation prompt for anything left in `manual`. **Gating:** do not proceed to
-DECIDE until it resolves.
+`~/.claude/skills/compass/scripts/compass.sh prompt reality-and-hypothesis-validation --section "Step 2c — Reality validation protocol (P0.1)"`
+and follow it (one `auto-verify-reality` call, then a prompt for anything left in `manual`).
+**Gating:** do not proceed to DECIDE until it resolves.
 
 ### Step 2d — Hypothesis validation
 
@@ -186,14 +178,14 @@ expired hypothesis).
 ### Step 2f — Session hygiene precondition check
 
 Take `last_close` from `orient-flags` (never a second `read`) and compute the hours elapsed. If under `session_cooldown_hours` (default 4), load
-`compass.sh prompt orient-gates --section "Step 2f — Session hygiene"`
+`~/.claude/skills/compass/scripts/compass.sh prompt orient-gates --section "Step 2f — Session hygiene"`
 and follow it: a **blocking** reason prompt, then `acknowledge-cooldown-violation`, which opens
 the session itself. Otherwise (or never closed), skip silently.
 
 ### Step 2h — Intent drift check
 
 If `intent_changed` is `false`, skip silently. If `true`, load
-`compass.sh prompt orient-gates --section "Step 2h"`
+`~/.claude/skills/compass/scripts/compass.sh prompt orient-gates --section "Step 2h"`
 and follow it: a gating Y/N drift prompt recorded with `set-intent` now, never re-prompted at close.
 
 ### Step 3 — DECIDE
@@ -205,9 +197,8 @@ items flagged as candidates at ORIENT. Keep each specific and completable in one
 **Order by natural execution sequence**, not priority alone:
 - **Dependencies first** — if B needs the state A leaves, list A first.
 - **Structural before additive** — refactors that make later goals cleaner go earlier.
-- **Exploit before explore** — implementation before design/research, so exploration has
-  concrete session context.
-- **Riskier first** — goals likely to surface blockers come early, while scope can still adapt.
+- **Exploit before explore** — so exploration has concrete session context.
+- **Riskier first** — while scope can still adapt.
 
 Add one line: `*Order: <brief reason>*`. Then ask: *"Does this match your intent for today? Add,
 remove, or reorder before I lock it in."* Accept additions, removals and rephrasing; "yes" or
@@ -233,15 +224,14 @@ Run after Step 3 is confirmed, before Step 3f. Build one numbered list, one line
    no results or only >90-day-old results, and at least 3 prior sessions exist.
 
 If none trigger, skip silently and render nothing. Otherwise load
-`compass.sh prompt pre-lock-advisory-batch --section "Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)"`
+`~/.claude/skills/compass/scripts/compass.sh prompt pre-lock-advisory-batch --section "Step 3b — Consolidated pre-lock advisory batch (v2 consolidation, 2026-09-16)"`
 and follow it for the parsing, routing and rules. It computes `b1` and `b3` follow-ups before the
 screen and shows small ones (≤ 3) inline, so Enter answers them.
 
 **One screen with Step 3f (default):** do not show 3b alone. Render its lines as `b1`–`b4` at the top
-of Step 3f's screen, under a `Before locking:` header, and take one response for both (override
-tokens `b2Y`, `3n`, `5:EEXX`). Tally one `batch` screen. If a `b2`/`b4` yes changes the goal list, run
-its follow-up after the response and re-ask only the `[GOAL TYPES]` line. Show 3b on its own screen
-only when the user asks for it. When Step 3b renders no lines, put Step 3's goal list on this
+of Step 3f's screen, under a `Before locking:` header, and take one response for both (tokens
+`b2Y`, `3n`, `5:EEXX`). Tally one `batch` screen. If a `b2`/`b4` yes changes the goal list, re-ask
+only the `[GOAL TYPES]` line afterwards. Show 3b alone only when the user asks. When Step 3b renders no lines, put Step 3's goal list on this
 screen too and take one response for goals and overrides; tally `goals` and `batch`.
 
 ### Step 3f — Consolidated DECIDE-tail batch
@@ -265,8 +255,8 @@ line whose trigger is false** (a line's number is stable across the session):
 7. **`[HYPOTHESES]`** — always. Default: **no**.
 
 If item 1, 2 or 3 renders, first load
-`compass.sh prompt decide-tail-cadence-items --section "Rendering lines 1/2"` and
-`compass.sh prompt decide-tail-cadence-items --section "Routing items 1–3"`
+`~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Rendering lines 1/2"` and
+`~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Routing items 1–3"`
 Skip both when only items 4–7 render.
 
 Render:
@@ -285,7 +275,7 @@ Accept all defaults, or override by number? [Enter to accept all]
 **Enter** accepts every default:
 items 1–3 take their yes-path, item 4 no, item 5 all `E` (`goal_types` = `exploit` per confirmed
 goal), items 6 and 7 no (`goal_contracts` stays empty; Step 4.5 is skipped). Any other response →
-load `compass.sh prompt decide-tail-cadence-items --section "Step 3f — Override parsing and routing (items 4–7)"`
+load `~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Step 3f — Override parsing and routing (items 4–7)"`
 and follow it.
 
 ### Step 3c — Architecture constraint check
@@ -300,16 +290,15 @@ detection and the pom.xml dependency-declaration check).
 
 Once confirmed, open the session:
 ```bash
-compass.sh open <namespace> '{"goals": [...], "goal_types": ["E", "X", ...]}' '<raw_impulse from Step 0>'
+~/.claude/skills/compass/scripts/compass.sh open <namespace> '{"goals": [...], "goal_types": ["E", "X", ...]}' '<raw_impulse from Step 0>'
 ```
 `goal_types` is Step 3f item 5's tags (one `E`/`X` per goal); `open` stores them for close.
 Omit the third argument if `raw_impulse` was skipped. Skip `open` if `acknowledge-cooldown-violation`
 (Step 2f) already opened the session. `assumption_audit_auto_reset: true` needs no action.
 
-Then populate the todo list with the confirmed goals if this runtime has a TodoWrite-equivalent
-tool. **Either way**, as each goal completes, call:
+Then put the goals on the host's todo list, if it has one. **Either way**, as each goal completes, call:
 ```bash
-compass.sh set-goal-status <namespace> '{"index": <0-based goal index>, "done": true}'
+~/.claude/skills/compass/scripts/compass.sh set-goal-status <namespace> '{"index": <0-based goal index>, "done": true}'
 ```
 The Drift nudge reads this when no host todo tool exists. Skip it only if you have confirmed the
 TodoWrite-equivalent exists and is what Drift nudge reads.
@@ -321,7 +310,7 @@ not yet validated in this namespace.` Otherwise skip silently.
 ### Step 4.5 — Pre-session hypothesis elicitation
 
 The Y/n gate is item 7 of Step 3f. Only if its answer was **Y**, load
-`compass.sh prompt hypothesis-elicitation --section "Step 4.5 — Pre-session hypothesis elicitation (P15)"`
+`~/.claude/skills/compass/scripts/compass.sh prompt hypothesis-elicitation --section "Step 4.5 — Pre-session hypothesis elicitation (P15)"`
 and follow it: one `log-learning` hypothesis per assumption, until the user says n.
 
 Confirm: `✓ Session open. Todo list set. Let's go.`
@@ -330,11 +319,11 @@ Confirm: `✓ Session open. Todo list set. Let's go.`
 
 After the confirm, run silently:
 ```bash
-compass.sh query-learnings <namespace> \
+~/.claude/skills/compass/scripts/compass.sh query-learnings <namespace> \
   '{"query": "<all confirmed goals joined by space>", "limit": 3}'
 ```
-If it returns **fewer than 2 results** or the corpus has **fewer than 5 learnings**, skip
-silently. Otherwise surface once, immediately after the confirm, no action needed:
+With **fewer than 2 results** or **fewer than 5 learnings** in the corpus, skip silently.
+Otherwise surface once, no action needed:
 
 ```
 📚 Session-relevant learnings:
@@ -353,7 +342,7 @@ to the router.
 **Prompt-count tally:** note each interactive screen Steps 0–4.6 show and, once the todo list is
 set, tally them all in one call:
 ```bash
-compass.sh tally-prompt <namespace> open <screen>[,<screen>...]
+~/.claude/skills/compass/scripts/compass.sh tally-prompt <namespace> open <screen>[,<screen>...]
 ```
 Keys: `gate`, `impulse` (only if Step 0 asked), `orient`, `skill` (2b), `audit` (2b.1),
 `hygiene` (2b.3b), `skillopt` (2b.4b), `hypothesis` (2d, 4.5), `cooldown` (2f), `drift` (2h),
