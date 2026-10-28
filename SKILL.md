@@ -254,10 +254,9 @@ line whose trigger is false** (a line's number is stable across the session):
 6. **`[CONTRACTS]`** — always. Default: **no** (`goal_contracts` stays empty).
 7. **`[HYPOTHESES]`** — always. Default: **no**.
 
-If item 1, 2 or 3 renders, first load
-`~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Rendering lines 1/2"` and
-`~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Routing items 1–3"`
-Skip both when only items 4–7 render.
+If item 1, 2 or 3 renders, first load both sections in one call:
+`~/.claude/skills/compass/scripts/compass.sh prompt decide-tail-cadence-items --section "Rendering lines 1/2" --section "Routing items 1–3"`
+Skip it when only items 4–7 render.
 
 Render:
 ```
