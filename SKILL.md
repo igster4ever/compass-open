@@ -108,9 +108,7 @@ Only when `brief_markdown` is missing, load the full format with
 **Conditional advisories:** check these fields in Step 1's Advisory inputs line — `session_complexity.elevated` ·
 `goal_stats.total_goals > 0 AND goal_stats.hit_rate < 70` · `reality_completeness.regression` ·
 `exploration_ratio.low` · `reality_structure_warnings` non-empty · `outcome_rate < 0.3` ·
-`contract_coverage < 0.4` · `quality_trend == "declining"` · `quality_plateau.plateaued` with a
-pulled-forward cadence · `quality_trend == "declining"` AND `quality_plateau.trend ==
-"improving"` (takes priority over the plain declining message). If **any** hold, load
+`contract_coverage < 0.4`. If **any** hold, load
 `~/.claude/skills/compass/scripts/compass.sh prompt orient-brief-advisories --section "ORIENT brief — conditional advisory blocks"`
 and append the matching block(s) in the order listed there. If **none** hold, do not load it.
 
