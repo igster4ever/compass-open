@@ -45,6 +45,9 @@ One read-only call returns everything OBSERVE needs, as plain text:
 ```bash
 ~/.claude/skills/compass/scripts/compass.sh brief <namespace> --with-flags
 ```
+Keep this call's text as it is: the compass-pulse mod detects ORIENT by matching `compass.sh brief`
+(or `generate-orient-brief`) in the Bash command, so renaming or replacing it silently stops
+the pane showing ORIENT (it did, 2026-10-15 to 2026-10-30).
 In order: `brief_markdown` (header, intent, reality completeness, signals, top learnings,
 cross-namespace signals, carry-forward, tactical backlog, artefacts), a reality summary,
 **Recent sessions** (S-1 to S-5), the **R9 goal-relevance block**, an **Advisory inputs** JSON
