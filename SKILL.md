@@ -32,6 +32,7 @@ Then show `brief_markdown` (flag every carry-forward and tactical backlog item a
 candidate), followed by:
 ```
 **Drift / gaps:** <1–3 specific gaps between intent and reality>
+(Fold any `⚠` line from the brief's `🔎 Ground` block into Drift / gaps.)
 📁 Code context (last session): <code_context.md as-is, only when present>
 🧰 Maintenance due: <the Gate flags `due` list> — `/compass maintain` when convenient.
 ```
